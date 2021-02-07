@@ -1,12 +1,15 @@
-const mongoose = require('mongoose');
+const initMongoDb = require('./mongodb').initMongoDb;
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const logger = require('morgan');
+const jwt = require('./utils/jwt');
+const errorHandler = require('./utils/error-handler');
 // const Data = require('./data');
 
 const app = express();
 
+const userRoutes = require('./routes/user');
 const audioRoutes = require('./routes/audio');
 const playlistRoutes = require('./routes/playlist');
 // const folderRoutes = require('./routes/folder');
@@ -22,25 +25,12 @@ require('dotenv').config();
 });*/
 
 app.use(cors());
+app.use(jwt());
+
+
 const router = express.Router();
 
-// this is our MongoDB database
-// connects our back end code with the database
-/*mongoose.connect(process.env.MONGO_DB_URL, function(err){
-    if(err){
-        console.log('Error connecting to: '+ process.env.MONGO_DB_URL)
-    }
-    else{
-        console.log('Connected to: '+ process.env.MONGO_DB_URL)
-    }
-});*/
-
-mongoose.connect(process.env.MONGOLAB_URI || 'mongodb://localhost/url_shortner').then(() => {
-    console.log('Connected to mongoDB');
-}).catch(e => {
-    console.log('Error while DB connecting');
-    console.log(e);
-});
+initMongoDb();
 
 // (optional) only made for logging and
 // bodyParser, parses the request body to be a readable json format
@@ -54,6 +44,7 @@ app.use('/file/images', express.static(path.join(__dirname, '/Storage/images')))
 
 // Setting general model route
 router.use('/audio', audioRoutes);
+router.use('/users', userRoutes);
 router.use('/playlist', playlistRoutes);
 // router.use('/folder', folderRoutes);
 
@@ -66,6 +57,8 @@ app.use('/', function (req, res){
         message: 'hello This is the backend app'
     });
 });
+
+app.use(errorHandler);
 
 // launch our backend into a port
 app.listen(process.env.PORT || 5201, () => console.log(`LISTENING ON PORT ${process.env.PORT}`));
