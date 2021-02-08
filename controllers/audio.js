@@ -99,6 +99,8 @@ exports.createAudio = (req, res, next) => {
     );
 };
 
+exports.find = (query = {}) => Audio.find(query);
+
 exports.getAllAudio = (req, res, next) => {
     Audio.find().then(
         (audios) => {

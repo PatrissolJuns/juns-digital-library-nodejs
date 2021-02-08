@@ -1,5 +1,5 @@
-const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
 module.exports = {
@@ -14,7 +14,7 @@ module.exports = {
 async function authenticate({ username, password }) {
     const user = await User.findOne({ username });
     if (user && bcrypt.compareSync(password, user.password)) {
-        const token = jwt.sign({ sub: user.id }, process.env.JWT_KEY, { expiresIn: '7d' });
+        const token = jwt.sign({ userId: user.id }, process.env.JWT_KEY, { expiresIn: '7d' });
         return {
             ...user.toJSON(),
             token
@@ -31,7 +31,6 @@ async function getById(id) {
 }
 
 async function create(userParam) {
-    console.log("userParam => ", userParam);
     // validate
     if (await User.findOne({ username: userParam.username })) {
         throw 'Username "' + userParam.username + '" is already taken';
