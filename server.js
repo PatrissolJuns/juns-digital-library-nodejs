@@ -1,36 +1,35 @@
-const initMongoDb = require('./mongodb').initMongoDb;
-const express = require('express');
+// Enable .env
+require('dotenv').config();
+
 const cors = require('cors');
-const bodyParser = require('body-parser');
 const logger = require('morgan');
+const io = require('socket.io')();
+const express = require('express');
 const jwt = require('./utils/jwt');
+const initIO = require('./sockets').initIO;
+const ROUTES = require('./urls/routes');
+const bodyParser = require('body-parser');
 const errorHandler = require('./utils/error-handler');
-// const Data = require('./data');
+const initMongoDb = require('./mongodb').initMongoDb;
 
 const app = express();
 
+// Group of Routes
 const userRoutes = require('./routes/user');
 const audioRoutes = require('./routes/audio');
 const playlistRoutes = require('./routes/playlist');
 // const folderRoutes = require('./routes/folder');
-const path = require('path');
 
-require('dotenv').config();
-
-
-/*app.use(function(req, res, next) {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-    next();
-});*/
-
+// Handle Cors
 app.use(cors());
+
+// Enable jwt for authentication
 app.use(jwt());
 
+// Initialize mongo database
+initMongoDb();
 
 const router = express.Router();
-
-initMongoDb();
 
 // (optional) only made for logging and
 // bodyParser, parses the request body to be a readable json format
@@ -39,8 +38,8 @@ app.use(logger('dev'));
 app.use(bodyParser.json({limit:'50mb'}));
 
 // Setting entry point to get static file
-app.use('/file/audios', express.static(path.join(__dirname, '/Storage/audios')));
-app.use('/file/images', express.static(path.join(__dirname, '/Storage/images')));
+app.use(ROUTES.STORAGE_AUDIOS.ROUTE, express.static(ROUTES.STORAGE_AUDIOS.DESTINATION));
+app.use(ROUTES.STORAGE_IMAGES.ROUTE, express.static(ROUTES.STORAGE_IMAGES.DESTINATION));
 
 // Setting general model route
 router.use('/audio', audioRoutes);
@@ -48,17 +47,22 @@ router.use('/users', userRoutes);
 router.use('/playlist', playlistRoutes);
 // router.use('/folder', folderRoutes);
 
-// append /api for our http requests
+// Prefixes of all api routes
 app.use('/api', router);
 
-//
+// Index
 app.use('/', function (req, res){
     res.status(200).json({
-        message: 'hello This is the backend app'
+        message: 'Welcome to JDL'
     });
 });
 
+// Enable errors handling
 app.use(errorHandler);
 
 // launch our backend into a port
-app.listen(process.env.PORT || 5201, () => console.log(`LISTENING ON PORT ${process.env.PORT}`));
+const server = app.listen(process.env.PORT || 5201, () => console.log(`LISTENING ON PORT ${process.env.PORT}`));
+
+io.attach(server,{ transports: ["websocket"] });
+
+initIO(io);
