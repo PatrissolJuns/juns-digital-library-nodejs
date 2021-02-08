@@ -9,8 +9,19 @@ const AudioSchema = new mongoose.Schema({
     musicSrc: String,
     size: Number,
     track: String,
-    year: String
+    year: String,
+    folder: String | null,
+    userId: mongoose.Types.ObjectId,
+    createdAt: String | Number,
+    updatedAt: String | Number,
+    deletedAt: String | Number | null,
 }, { versionKey: false });
+
+AudioSchema.pre('save', function(next) {
+    this.createdAt = Date.now();
+    this.updatedAt = Date.now();
+    next();
+});
 
 mongoose.model('Audio', AudioSchema);
 

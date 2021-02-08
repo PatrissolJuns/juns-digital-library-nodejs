@@ -2,8 +2,18 @@ const mongoose = require('mongoose');
 
 const PlaylistSchema = new mongoose.Schema({
     name: String,
-    audioList: [String]
+    content: [mongoose.Types.ObjectId],
+    userId: mongoose.Types.ObjectId,
+    createdAt: String | Number,
+    updatedAt: String | Number,
+    deletedAt: String | Number | null,
 }, { versionKey: false });
+
+PlaylistSchema.pre('save', function(next) {
+    this.createdAt = Date.now();
+    this.updatedAt = Date.now();
+    next();
+});
 
 mongoose.model('Playlist', PlaylistSchema);
 
