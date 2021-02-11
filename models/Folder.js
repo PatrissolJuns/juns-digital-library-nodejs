@@ -6,7 +6,10 @@ const FolderSchema = new mongoose.Schema({
         unique: true,
         required: [true, "The name field is required"],
     },
-    userId: mongoose.Types.ObjectId,
+    userId: {
+        type: mongoose.Types.ObjectId,
+        ref: 'User'
+    },
     parent: {
         type: String | null,
         /*validate: {

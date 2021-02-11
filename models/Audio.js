@@ -10,8 +10,14 @@ const AudioSchema = new mongoose.Schema({
     size: Number,
     track: String,
     year: String,
-    folder: String | null,
-    userId: mongoose.Types.ObjectId,
+    folderId: {
+        type: mongoose.Types.ObjectId,
+        ref: 'Folder'
+    } | null,
+    userId: {
+        type: mongoose.Types.ObjectId,
+        ref: 'User'
+    },
     createdAt: String | Number,
     updatedAt: String | Number,
     deletedAt: String | Number | null,
