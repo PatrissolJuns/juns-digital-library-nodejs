@@ -223,6 +223,12 @@ exports.rename = (socket, outputEvent, data) => {
         });
 };
 
+/**
+ * Set bookmark status of an audio
+ * @param socket
+ * @param outputEvent
+ * @param data
+ */
 exports.setBookmark = (socket, outputEvent, data) => {
     if (data.isBookmarked === undefined || data.isBookmarked == null) {
         socket.emit(outputEvent, {status: false, error: "INVALID_BOOKMARK", message: "Invalid bookmark given"});

@@ -18,8 +18,6 @@ const app = express();
 // Group of Routes
 const userRoutes = require('./routes/user');
 const audioRoutes = require('./routes/audio');
-const playlistRoutes = require('./routes/playlist');
-// const folderRoutes = require('./routes/folder');
 
 // Handle Cors
 app.use(cors());
@@ -47,8 +45,6 @@ app.use(bodyParser.urlencoded({ extended: false, limit:'50mb', parameterLimit: 1
 // Setting general model route
 router.use('/audios', audioRoutes);
 router.use('/users', userRoutes);
-router.use('/playlists', playlistRoutes);
-// router.use('/folder', folderRoutes);
 
 // Prefixes of all api routes
 app.use('/api', router);

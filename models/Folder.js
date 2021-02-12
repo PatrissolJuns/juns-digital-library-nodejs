@@ -7,8 +7,9 @@ const FolderSchema = new mongoose.Schema({
         required: [true, "The name field is required"],
     },
     userId: {
-        type: mongoose.Types.ObjectId,
-        ref: 'User'
+        ref: 'User',
+        required: [true, "The userId field is required"],
+        type: mongoose.Types.ObjectId
     },
     parent: {
         type: String | null,

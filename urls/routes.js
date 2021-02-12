@@ -13,6 +13,32 @@ const FOLDERS = {
     },
 };
 
+const PLAYLISTS = {
+    GET_ALL: {
+        INPUT: 'playlists:all:get:input',
+        OUTPUT: 'playlists:all:get:output',
+    },
+    ITEMS: {
+        ADD: {
+            INPUT: 'playlists:items:add:input',
+            OUTPUT: 'playlists:items:add:output',
+        },
+        REMOVE: {
+            INPUT: 'playlists:items:remove:input',
+            OUTPUT: 'playlists:items:remove:output',
+        },
+    },
+    CREATE: {
+        INPUT: 'playlists:create:input',
+        OUTPUT: 'playlists:create:output',
+    },
+    RENAME: {
+        INPUT: 'playlists:one:rename:input',
+        OUTPUT: 'playlists:one:rename:output',
+    },
+
+};
+
 const AUDIOS = {
     BASE: '/audios',
     CREATE: '/create',
@@ -52,6 +78,7 @@ const STORAGE_IMAGES = {
 module.exports = {
     AUDIOS,
     FOLDERS,
+    PLAYLISTS,
     STORAGE_AUDIOS,
     STORAGE_IMAGES
 };

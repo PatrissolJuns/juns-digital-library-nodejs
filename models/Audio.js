@@ -14,12 +14,14 @@ const AudioSchema = new mongoose.Schema({
     originalTitle: String,
     year: String,
     folderId: {
-        type: mongoose.Types.ObjectId,
-        ref: 'Folder'
+        ref: 'Folder',
+        required: [true, "The folderId field is required"],
+        type: mongoose.Types.ObjectId
     } | null,
     userId: {
-        type: mongoose.Types.ObjectId,
-        ref: 'User'
+        ref: 'User',
+        required: [true, "The userId field is required"],
+        type: mongoose.Types.ObjectId
     },
     createdAt: String | Number,
     updatedAt: String | Number,

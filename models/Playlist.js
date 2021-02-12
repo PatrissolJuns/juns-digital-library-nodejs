@@ -1,11 +1,25 @@
 const mongoose = require('mongoose');
 
+const PlaylistContentSchema = new mongoose.Schema({
+    type: {
+        type: String,
+        required: true,
+        enum: ['Audio', 'Video']
+    },
+    id: {
+        required: true,
+        type: mongoose.Types.ObjectId,
+        refPath: 'type'
+    }
+});
+
 const PlaylistSchema = new mongoose.Schema({
     name: String,
-    content: [mongoose.Types.ObjectId],
+    content: [PlaylistContentSchema],
     userId: {
-        type: mongoose.Types.ObjectId,
-        ref: 'User'
+        ref: 'User',
+        required: [true, "The userId field is required"],
+        type: mongoose.Types.ObjectId
     },
     createdAt: String | Number,
     updatedAt: String | Number,
