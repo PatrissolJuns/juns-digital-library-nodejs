@@ -33,12 +33,10 @@ exports.createFolder = (socket, outputEvent, data) => {
         parent: data.parent || null
     });
 
-    // console.log("folder => ", folder);
-
     folder
         .save()
         .then((newFolder) => {
-            socket.emit(outputEvent, {status: true, data: {newFolder}});
+            socket.emit(outputEvent, {status: true, data: newFolder});
         })
         .catch(error => {
             if (error.code === 11000) {

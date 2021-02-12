@@ -11,11 +11,25 @@ const FOLDERS = {
 
 const AUDIOS = {
     BASE: '/audios',
-    GET_ALL: '/',
     CREATE: '/create',
-    RENAME: '/rename/:id',
-    DELETE: '/delete/:id',
-    TOGGLE_BOOKMARK: 'toggle-bookmark/:id',
+    // GET_ALL: '/',
+    // RENAME: '/rename/:id',
+    // DELETE: '/delete/:id',
+    // TOGGLE_BOOKMARK: 'toggle-bookmark/:id',
+    GET_ALL: {
+        INPUT: 'audios:all:get:input',
+        OUTPUT: 'audios:all:get:output',
+    },
+    GET_ONE: {
+        BY_ID: {
+            INPUT: 'audios:one:get:by:id:input',
+            OUTPUT: 'audios:one:get:by:id:output',
+        }
+    },
+    RENAME: {
+        INPUT: 'audios:one:rename:input',
+        OUTPUT: 'audios:one:rename:output',
+    }
 };
 
 const STORAGE_AUDIOS = {

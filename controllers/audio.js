@@ -243,6 +243,43 @@ exports.toggleBookmark = (req, res, next) => {
     );
 };
 
+exports.getAll = (socket, outputEvent, data) => {
+    Audio
+        .find({})
+        .then(audios => {
+            socket.emit(outputEvent, {status: true, data: audios});
+        })
+        .catch(error => {
+            socket.emit(outputEvent, {status: false, error: error, message: "Error while getting all audios"});
+        });
+};
+
+exports.getOneById = (socket, outputEvent, data) => {
+    Audio
+        .find({_id: data.id})
+        .then(audio => {
+            socket.emit(outputEvent, {status: true, data: audio});
+        })
+        .catch(error => {
+            socket.emit(outputEvent, {status: false, error: error, message: "Error while getting one audio by id"});
+        });
+};
+
+exports.rename = (socket, outputEvent, data) => {
+    if (!data.title) {
+        socket.emit(outputEvent, {status: false, error: "INVALID_TITLE", message: "Invalid title given"});
+    }
+
+    Audio
+        .findByIdAndUpdate(data.id, {title: data.title})
+        .then(async audio => {
+            socket.emit(outputEvent, {status: true, data: audio});
+        })
+        .catch(error => {
+            socket.emit(outputEvent, {status: false, error: error, message: "Error while getting one audio by id"});
+        });
+};
+
 /*
 exports.updateFromDBBelongToPlaylist = async (_id, _newBelongToPlaylist, _isAdd) => {
     let audio = await this.getFromDBOneAudio(_id);
