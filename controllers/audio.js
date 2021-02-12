@@ -1,102 +1,98 @@
-// in controllers/audio.js
-const jsmediatags  = require("jsmediatags");
+const fs = require('fs');
+const btoa = require('btoa');
+const mm = require('music-metadata');
 const Audio = require('../models/Audio');
 const PlaylistController = require('../controllers/playlist');
-const btoa = require('btoa');
-const fs = require('fs');
-const { getAudioDurationInSeconds } = require('get-audio-duration');
+const { getFileExtensionFromMimeType } = require('../helpers');
 
 
 /**
- * This function get the various property of an audio
+ * Returns various property of an audio
  * @param audio
- * @returns {Promise<Object>}
+ * @returns {Promise<any>}
  */
 const getAudioInformation = (audio) => {
-    let data = {}; let tag = null; let cover = 'default_audio.jpg'; let duration = null;
-    return new Promise((resolve, reject) => {
-        jsmediatags.read(audio.path, {
-            onSuccess: function(_tag) {
-                // console.log(tag);
-                tag = _tag;
-                if(_tag.tags.hasOwnProperty('title')) {
-                    if(_tag.tags.hasOwnProperty('picture') && _tag.tags.picture.hasOwnProperty('data')) {
-                        let image = _tag.tags.picture; let base64String = "";
-                        for (let i = 0; i < image.data.length; i++) {
-                            base64String += String.fromCharCode(image.data[i]);
-                        }
-                        /* old system
-                        let base64String = "";
-                        var base64 = "data:" + image.format + ";base64," +  btoa(base64String); */
+    return new Promise(async (resolve, reject) => {
+        try {
+            // Get metadata
+            const metadata = await mm.parseFile(audio.path, {duration: true});
+            // Get cover art
+            const image = mm.selectCover(metadata.common.picture);
 
-                        cover = Date.now() + ".png";
+            // Initialize default cover art
+            let cover = process.env.DEFAULT_AUDIO_COVER, base64String = "";
 
-                        // transform the base64 into an image file and save it
-                        fs.writeFile("Storage/images/" + cover, btoa(base64String), {encoding: 'base64'}, function(err) {
-                            // check if there is an error
-                            if(err) {
-                                return console.log(err);
-                            }
-                            console.log("The file was saved!");
-                        });
-                    }
+            // Try to save cover art
+            if (image) {
+                // Map data from metadata cover art to base64
+                for (let i = 0; i < image.data.length; i++) {
+                    base64String += String.fromCharCode(image.data[i]);
                 }
+                /* old system
+                let base64String = "";
+                var base64 = "data:" + image.format + ";base64," +  btoa(base64String); */
 
-                getAudioDurationInSeconds(audio.path).then((_duration) => {
-                    // console.log("duration = ", duration)
-                    // console.log("duration = ", parseInt(duration / 60, 10) + ":" + parseInt(duration % 60))
-                    data = {
-                        artist: tag.tags.artist === undefined ? "unknown" : tag.tags.artist,
-                        album: tag.tags.album === undefined ? "unknown" : tag.tags.album,
-                        cover: cover,
-                        duration: _duration,
-                        track: audio.originalname,
-                        // track: tag.tags.track === undefined ? "unknown" : tag.tags.track,
-                        year: tag.tags.year === undefined ? "unknown" : tag.tags.year,
-                    };
-                    resolve(data);
-                });
-            },
-            onError: function(error) {
-                console.log(':(', error.type, error.info);
-                reject();
+                // Get cover filename from audio source
+                const baseFileName = audio.filename.split('.');
+
+                // Set cover filename
+                cover = baseFileName.slice(0, baseFileName.length - 1).join('') + '.' + getFileExtensionFromMimeType(image.format);
+
+                try {
+                    // Try to transform the base64 into an image file and save it
+                    fs.writeFileSync(process.env.IMAGES_STORAGE_DIR + cover, btoa(base64String), {encoding: 'base64'});
+                } catch (e) {
+                    // Go back to default image in case of failure
+                    cover = process.env.DEFAULT_AUDIO_COVER;
+                }
             }
-        });
+
+            resolve({
+                artist: metadata.common.artist === undefined ? "unknown" : metadata.common.artist,
+                album: metadata.common.album === undefined ? "unknown" : metadata.common.album,
+                cover: cover,
+                duration: metadata.format.duration,
+                bitrate: metadata.format.bitrate,
+                originalTitle: metadata.common.title === undefined ? "unknown" : metadata.common.title,
+                title: audio.originalname,
+                source: audio.filename,
+                size: audio.size,
+                year: metadata.common.year === undefined ? "unknown" : metadata.common.year,
+            });
+        } catch (e) {
+            reject(e);
+        }
     });
 };
 
 exports.createAudio = (req, res, next) => {
-    // console.log("req.file = ",req.file);
-    getAudioInformation(req.file).then(
-        (_data) => {
-            // console.log("data = ",_data);
+    getAudioInformation(req.file)
+        .then(async (_data) => {
             const audio = new Audio({
-                artist: _data.artist,
-                album: _data.album,
-                cover: _data.cover,
-                duration: _data.duration,
+                ..._data,
+                title: req.body.title ? req.body.title : _data.title,
                 isBookmark: false,
-                musicSrc: req.file.filename,
-                size: req.file.size,
-                track: _data.track,
-                year: _data.year,
+                userId: req.user.userId,
+                folderId: req.body.folderId,
             });
-            audio.save().then(
-                (audio) => {
-                    console.log("inside node");
-                    res.status(200).json({
-                        message: "audio successfully saved!"
-                    });
-                }
-            ).catch(
-                (error) => {
-                    res.status(400).json({
-                        error: error
-                    });
-                }
-            );
-        }
-    );
+
+            try {
+                await audio.save();
+                res.status(200).json({
+                    message: "Audio successfully saved!",
+                    data: audio
+                });
+            } catch (error) {
+                res.status(400).json({
+                    error: error
+                });
+            }
+        })
+        .catch(error => {
+            res.status(400).json({
+                error: error
+            });
+        });
 };
 
 exports.find = (query = {}) => Audio.find(query);

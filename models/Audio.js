@@ -4,11 +4,14 @@ const AudioSchema = new mongoose.Schema({
     artist: String,
     album: String,
     cover: String,
-    duration: String,
+    duration: Number,
+    bitrate: Number,
     isBookmark: Boolean,
-    musicSrc: String,
+    source: String,
     size: Number,
-    track: String,
+    title: String,
+    // This is a title from metadata
+    originalTitle: String,
     year: String,
     folderId: {
         type: mongoose.Types.ObjectId,
