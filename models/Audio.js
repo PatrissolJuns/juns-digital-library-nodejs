@@ -6,7 +6,7 @@ const AudioSchema = new mongoose.Schema({
     cover: String,
     duration: Number,
     bitrate: Number,
-    isBookmark: Boolean,
+    isBookmarked: Boolean,
     source: String,
     size: Number,
     title: String,

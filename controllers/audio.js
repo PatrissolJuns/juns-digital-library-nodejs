@@ -71,7 +71,7 @@ exports.createAudio = (req, res, next) => {
             const audio = new Audio({
                 ..._data,
                 title: req.body.title ? req.body.title : _data.title,
-                isBookmark: false,
+                isBookmarked: false,
                 userId: req.user.userId,
                 folderId: req.body.folderId,
             });
@@ -129,55 +129,9 @@ exports.getOneAudio = (req, res, next) => {
 };
 
 exports.getFromDBOneAudio = (_id) => {
-    // console.log("inside _id = ",_id);
-    return Audio.findOne({
-        _id: _id
-    }).then(
-        (audio) => {
-            // console.log("inside audio = ",audio);
-            return audio;
-        }
-    ).catch(
-        (error) => {
-            return null;
-        }
-    );
-}
-
-exports.renameAudio = (req, res, next) => {
-    Audio.findOne({
-        _id: req.params.id
-    }).then(
-        (_audio) => {
-            /*const audio = new Audio({
-                _id: req.params.id,
-                ..._audio,
-                name: req.body.name,
-            });*/
-            let t = JSON.parse(JSON.stringify(_audio));
-            t.track = req.body.track;
-
-            Audio.updateOne({_id: req.params.id}, t).then(
-                () => {
-                    res.status(200).json({
-                        message: 'audio updated successfully!'
-                    });
-                }
-            ).catch(
-                (error) => {
-                    res.status(400).json({
-                        error: error
-                    });
-                }
-            );
-        }
-    ).catch(
-        (error) => {
-            res.status(404).json({
-                error: error
-            });
-        }
-    );
+    return Audio.findById(_id)
+        .then(audio => audio)
+        .catch(error =>null);
 };
 
 exports.deleteAudio = async (req, res, next) => {
@@ -212,37 +166,14 @@ exports.deleteAudio = async (req, res, next) => {
     );
 };
 
-exports.toggleBookmark = (req, res, next) => {
-    Audio.findOne({
-        _id: req.params.id
-    }).then(
-        (_audio) => {
-            let t = JSON.parse(JSON.stringify(_audio));
-            t.isBookmark = !t.isBookmark;
+/* Web Socket API */
 
-            Audio.updateOne({_id: req.params.id}, t).then(
-                () => {
-                    res.status(200).json({
-                        message: 'audio updated successfully!'
-                    });
-                }
-            ).catch(
-                (error) => {
-                    res.status(400).json({
-                        error: error
-                    });
-                }
-            );
-        }
-    ).catch(
-        (error) => {
-            res.status(404).json({
-                error: error
-            });
-        }
-    );
-};
-
+/**
+ * Get all audios
+ * @param socket
+ * @param outputEvent
+ * @param data
+ */
 exports.getAll = (socket, outputEvent, data) => {
     Audio
         .find({})
@@ -254,6 +185,12 @@ exports.getAll = (socket, outputEvent, data) => {
         });
 };
 
+/**
+ * Get one audio by id
+ * @param socket
+ * @param outputEvent
+ * @param data
+ */
 exports.getOneById = (socket, outputEvent, data) => {
     Audio
         .find({_id: data.id})
@@ -265,6 +202,12 @@ exports.getOneById = (socket, outputEvent, data) => {
         });
 };
 
+/**
+ * Rename an audio
+ * @param socket
+ * @param outputEvent
+ * @param data
+ */
 exports.rename = (socket, outputEvent, data) => {
     if (!data.title) {
         socket.emit(outputEvent, {status: false, error: "INVALID_TITLE", message: "Invalid title given"});
@@ -272,11 +215,26 @@ exports.rename = (socket, outputEvent, data) => {
 
     Audio
         .findByIdAndUpdate(data.id, {title: data.title})
-        .then(async audio => {
+        .then(audio => {
             socket.emit(outputEvent, {status: true, data: audio});
         })
         .catch(error => {
-            socket.emit(outputEvent, {status: false, error: error, message: "Error while getting one audio by id"});
+            socket.emit(outputEvent, {status: false, error: error, message: "Error while renaming an audio"});
+        });
+};
+
+exports.setBookmark = (socket, outputEvent, data) => {
+    if (data.isBookmarked === undefined || data.isBookmarked == null) {
+        socket.emit(outputEvent, {status: false, error: "INVALID_BOOKMARK", message: "Invalid bookmark given"});
+    }
+
+    Audio
+        .findByIdAndUpdate(data.id, {isBookmarked: data.isBookmarked})
+        .then(audio => {
+            socket.emit(outputEvent, {status: true, data: audio});
+        })
+        .catch(error => {
+            socket.emit(outputEvent, {status: false, error: error, message: "Error while setting bookmark on an audio"});
         });
 };
 

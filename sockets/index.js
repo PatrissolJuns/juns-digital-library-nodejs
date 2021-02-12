@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const audio = require('./audio').routes;
 const folder = require('./folder').routes;
 const userController = require('../controllers/user');
 
@@ -43,6 +44,7 @@ exports.initIO = (io) => {
     });
 
     io.on('connection', socket => {
+        audio(socket);
         folder(socket);
     });
 };

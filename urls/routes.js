@@ -7,6 +7,10 @@ const FOLDERS = {
         INPUT: 'folders:create:input',
         OUTPUT: 'folders:create:output',
     },
+    RENAME: {
+        INPUT: 'folders:one:rename:input',
+        OUTPUT: 'folders:one:rename:output',
+    },
 };
 
 const AUDIOS = {
@@ -29,7 +33,11 @@ const AUDIOS = {
     RENAME: {
         INPUT: 'audios:one:rename:input',
         OUTPUT: 'audios:one:rename:output',
-    }
+    },
+    BOOKMARK: {
+        INPUT: 'audios:one:bookmark:input',
+        OUTPUT: 'audios:one:bookmark:output',
+    },
 };
 
 const STORAGE_AUDIOS = {

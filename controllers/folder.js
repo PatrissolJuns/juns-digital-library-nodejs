@@ -46,3 +46,24 @@ exports.createFolder = (socket, outputEvent, data) => {
             }
         });
 };
+
+/**
+ * Rename a folder
+ * @param socket
+ * @param outputEvent
+ * @param data
+ */
+exports.rename = (socket, outputEvent, data) => {
+    if (!data.name) {
+        socket.emit(outputEvent, {status: false, error: "INVALID_NAME", message: "Invalid name given"});
+    }
+
+    Folder
+        .findByIdAndUpdate(data.id, {name: data.name})
+        .then(audio => {
+            socket.emit(outputEvent, {status: true, data: audio});
+        })
+        .catch(error => {
+            socket.emit(outputEvent, {status: false, error: error, message: "Error while renaming a folder"});
+        });
+};
