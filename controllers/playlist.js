@@ -30,8 +30,11 @@ exports.getOne = (socket, outputEvent, data) => {
 
     Playlist
         .findById(data.id)
-        .then(playlist => {
-            socket.emit(outputEvent, {status: true, data: playlist});
+        .then(async playlist => {
+            const content = await getPlaylistContent(playlist);
+            if (content) {
+                socket.emit(outputEvent, {status: true, data: {...playlist, content}});
+            } else socket.emit(outputEvent, {status: false, error: error, message: "Error while getting content of playlist"});
         })
         .catch(error => {
             socket.emit(outputEvent, {status: false, error: error, message: "Error while getting a playlist"});
@@ -151,4 +154,44 @@ exports.getFromDBOnePlaylist = (_id) => {
         .findById(_id)
         .then(playlist => playlist)
         .catch(error => null);
+};
+
+/**
+ * Get tje very content of a playlist
+ * @param playlist
+ * @returns {Promise<any>}
+ */
+exports.getPlaylistContent = (playlist) => {
+    return new Promise((resolve, reject) => {
+        // [a1, a2, a5, v3, a5]
+        /*let audios = [], videos = [];
+        playlist.content.filter((item, index) => {
+            if (item.type === process.env.MEDIA_TYPE_AUDIO) {
+                audios.push({item: item, index})
+            } else videos.push({item: item, index})
+        });*/
+        const audioIds = playlist.content.filter(item => item.type === process.env.MEDIA_TYPE_AUDIO).map(item => item.id),
+              videoIds = playlist.content.filter(item => item.type === process.env.MEDIA_TYPE_VIDEO).map(item => item.id);
+
+        Promise
+            .all([
+                // Audio.find({_id : { $in : audios.map(a => a.item.id) } }),
+                Audio.find({_id : { $in : audioIds } }),
+                // Video.find({_id : { $in : videoIds } }),
+            ])
+            .then(values => {
+                const result = [], audiosResult = values[0], videoResult = values[1];
+
+                // Map content data to gets the real value
+                playlist.content.forEach((item, index) => {
+                    if (item.type === process.env.MEDIA_TYPE_AUDIO) {
+                        result[index] = audiosResult.find(a => a._id === item.id);
+                    } else result[index] = videoResult.find(v => v._id === item.id);
+                });
+                resolve(result);
+            })
+            .catch(error => {
+                reject(null);
+            });
+    })
 };

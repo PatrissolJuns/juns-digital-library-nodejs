@@ -18,7 +18,33 @@ const getFileExtensionFromMimeType = (mimeType) => {
     }
 };
 
+/**
+ * Perform async task while looping
+ *
+ * Reference:
+ *  - https://stackoverflow.com/questions/40328932/javascript-es6-promise-for-loop
+ *  - https://github.com/Download/for-async/blob/master/src/for-async.js
+ * @param arr
+ * @param work
+ * @returns {*|Promise<any>}
+ */
+export const forAsync = (arr, work) => {
+    function loop(arr, i) {
+        return new Promise((resolve, reject) => {
+            if (i >= arr.length) {resolve()}
+            else try {
+                Promise.resolve(work(arr[i], i))
+                /*.then(() => resolve(loop(arr, i+1)))
+                .catch(reject)*/
+                    .finally(() => resolve(loop(arr, i+1)));
+            } catch(error) {reject(error)}
+        })
+    }
+    return loop(arr, 0);
+};
+
 module.exports = {
+    forAsync,
     generateId,
     getFileExtensionFromMimeType,
 };
