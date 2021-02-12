@@ -1,5 +1,3 @@
-const path = require('path');
-
 const FOLDERS = {
     CONTENT: {
         INPUT: 'folders:one:content:input',
@@ -21,12 +19,12 @@ const AUDIOS = {
 };
 
 const STORAGE_AUDIOS = {
-    ROUTE: '/file/audio',
-    DESTINATION: path.join(__dirname, '/Storage/audios'),
+    ROUTE: '/file/audios',
+    DESTINATION: '/' + process.env.AUDIOS_STORAGE_DIR,
 };
 const STORAGE_IMAGES = {
-    ROUTE: '/file/image',
-    DESTINATION: path.join(__dirname, '/Storage/images'),
+    ROUTE: '/file/images',
+    DESTINATION: '/' + process.env.IMAGES_STORAGE_DIR,
 };
 
 module.exports = {

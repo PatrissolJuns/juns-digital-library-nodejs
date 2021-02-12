@@ -2,6 +2,7 @@
 require('dotenv').config();
 
 const cors = require('cors');
+const path = require('path');
 const logger = require('morgan');
 const io = require('socket.io')();
 const express = require('express');
@@ -23,6 +24,11 @@ const playlistRoutes = require('./routes/playlist');
 // Handle Cors
 app.use(cors());
 
+// Setting entry point to get static file
+// And disable authentication
+app.use(ROUTES.STORAGE_AUDIOS.ROUTE, express.static(path.join(__dirname, ROUTES.STORAGE_AUDIOS.DESTINATION)));
+app.use(ROUTES.STORAGE_IMAGES.ROUTE, express.static(path.join(__dirname, ROUTES.STORAGE_IMAGES.DESTINATION)));
+
 // Enable jwt for authentication
 app.use(jwt());
 
@@ -37,10 +43,6 @@ app.use(logger('dev'));
 // app.use(express.json());
 app.use(bodyParser.json({limit:'50mb'}));
 app.use(bodyParser.urlencoded({ extended: false, limit:'50mb', parameterLimit: 1000000 }));
-
-// Setting entry point to get static file
-app.use(ROUTES.STORAGE_AUDIOS.ROUTE, express.static(ROUTES.STORAGE_AUDIOS.DESTINATION));
-app.use(ROUTES.STORAGE_IMAGES.ROUTE, express.static(ROUTES.STORAGE_IMAGES.DESTINATION));
 
 // Setting general model route
 router.use('/audios', audioRoutes);
