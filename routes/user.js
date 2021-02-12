@@ -13,12 +13,24 @@ router.delete('/:id', _delete);
 
 module.exports = router;
 
+/**
+ * Authentication with login and password
+ * @param req
+ * @param res
+ * @param next
+ */
 function authenticate(req, res, next) {
     UserController.authenticate(req.body)
         .then(user => user ? res.json(user) : res.status(400).json({ message: 'Username or password is incorrect' }))
         .catch(err => next(err));
 }
 
+/**
+ * Registration with login, email and password
+ * @param req
+ * @param res
+ * @param next
+ */
 function register(req, res, next) {
     UserController.create(req.body)
         .then(() => res.json({}))
@@ -32,7 +44,7 @@ function getAll(req, res, next) {
 }
 
 function getCurrent(req, res, next) {
-    UserController.getById(req.user.sub)
+    UserController.getById(req.user.userId)
         .then(user => user ? res.json(user) : res.sendStatus(404))
         .catch(err => next(err));
 }

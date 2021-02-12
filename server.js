@@ -6,11 +6,11 @@ const logger = require('morgan');
 const io = require('socket.io')();
 const express = require('express');
 const jwt = require('./utils/jwt');
-const initIO = require('./sockets').initIO;
 const ROUTES = require('./urls/routes');
 const bodyParser = require('body-parser');
-const errorHandler = require('./utils/error-handler');
+const initIO = require('./sockets').initIO;
 const initMongoDb = require('./mongodb').initMongoDb;
+const errorHandler = require('./utils/error-handler');
 
 const app = express();
 
@@ -33,18 +33,19 @@ const router = express.Router();
 
 // (optional) only made for logging and
 // bodyParser, parses the request body to be a readable json format
-app.use(bodyParser.urlencoded({ extended: false, limit:'50mb', parameterLimit: 1000000 }));
 app.use(logger('dev'));
+// app.use(express.json());
 app.use(bodyParser.json({limit:'50mb'}));
+app.use(bodyParser.urlencoded({ extended: false, limit:'50mb', parameterLimit: 1000000 }));
 
 // Setting entry point to get static file
 app.use(ROUTES.STORAGE_AUDIOS.ROUTE, express.static(ROUTES.STORAGE_AUDIOS.DESTINATION));
 app.use(ROUTES.STORAGE_IMAGES.ROUTE, express.static(ROUTES.STORAGE_IMAGES.DESTINATION));
 
 // Setting general model route
-router.use('/audio', audioRoutes);
+router.use('/audios', audioRoutes);
 router.use('/users', userRoutes);
-router.use('/playlist', playlistRoutes);
+router.use('/playlists', playlistRoutes);
 // router.use('/folder', folderRoutes);
 
 // Prefixes of all api routes
