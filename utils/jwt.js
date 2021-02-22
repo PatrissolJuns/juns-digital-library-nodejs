@@ -1,5 +1,5 @@
 const expressJwt = require('express-jwt');
-const userService = require('../controllers/user');
+const User = require('../models/User');
 
 module.exports = jwt;
 
@@ -11,7 +11,7 @@ module.exports = jwt;
  * @returns {Promise<*>}
  */
 async function isRevoked(req, payload, done) {
-    const user = await userService.getById(payload.userId);
+    const user = await User.findOne({_id: payload.userId});
 
     // revoke token if user no longer exists
     if (!user) {
@@ -30,7 +30,8 @@ function jwt() {
         path: [
             // public routes that don't require authentication
             '/api/users/authenticate',
-            '/api/users/register'
+            '/api/users/register',
+            '/api/users/refresh-token',
         ]
     });
 }

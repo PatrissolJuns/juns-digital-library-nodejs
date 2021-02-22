@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const initMongoDb = () => {
     mongoose
         .connect(
-            process.env.MONGO_DB_URL || 'mongodb://localhost/url_shortner',
+            process.env.MONGO_DB_URL || 'mongodb://localhost:27017/jdl',
             {
                 useNewUrlParser: true,
                 useUnifiedTopology: true

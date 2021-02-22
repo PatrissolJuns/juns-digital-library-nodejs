@@ -1,3 +1,5 @@
+const {ERRORS, MONGODB_ERRORS_CODE} = require('../utils/errors');
+
 /**
  * Generate a unique id
  * @returns {string}
@@ -28,7 +30,7 @@ const getFileExtensionFromMimeType = (mimeType) => {
  * @param work
  * @returns {*|Promise<any>}
  */
-export const forAsync = (arr, work) => {
+const forAsync = (arr, work) => {
     function loop(arr, i) {
         return new Promise((resolve, reject) => {
             if (i >= arr.length) {resolve()}
@@ -43,8 +45,29 @@ export const forAsync = (arr, work) => {
     return loop(arr, 0);
 };
 
+/**
+ * Return the response error
+ * @returns {{errors: {code: *, message: *}[], status: number}}
+ * @param errors
+ */
+const getErrors = (...errors) => {
+    return {
+        status: 400,
+        errors: errors.map(error => ({
+            code: error.code,
+            message: error.message,
+        }))
+    }
+};
+
+const error500 = (res) => {
+    return res.status(500).json({status: 500, errors: [ERRORS.SERVER.INTERNAL_SERVER_ERROR]});
+};
+
 module.exports = {
     forAsync,
+    error500,
+    getErrors,
     generateId,
     getFileExtensionFromMimeType,
 };

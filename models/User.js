@@ -4,7 +4,7 @@ const UserSchema = new mongoose.Schema({
     login: {
         type: String,
         required: [true, "The login field is required"],
-        unique: 1,
+        // unique: 1,
     },
     email: {
         type: String,
@@ -21,17 +21,14 @@ const UserSchema = new mongoose.Schema({
 }, {
     virtuals: true,
     versionKey: false,
-    transform: function (doc, ret) {
-        delete ret._id;
-        delete ret.password;
-        return ret;
-    }
 });
 
 UserSchema.set('toJSON', {
     transform: function(doc, ret, options) {
-        delete ret.password;
-        return ret;
+        const result = {id: ret._id, ...ret};
+        delete result._id;
+        delete result.password;
+        return result;
     }
 });
 
