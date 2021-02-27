@@ -13,7 +13,7 @@ exports.validateCreateUser = (data) => {
         result.errors.push({...ERRORS.FIELDS.REQUIRED, field: "password"});
     if (email && !validator.isEmail(email))
         result.errors.push({...ERRORS.FIELDS.INVALID_EMAIL, field: "email"});
-    if (password && !validator.isByteLength(password, {min: 4}))
+    if (password && !validator.isByteLength(password, {min: Number(process.env.MIN_PASSWORD_LENGTH)}))
         result.errors.push({...ERRORS.FIELDS.WEAK_PASSWORD, field: "password"});
 
     return result.errors.length === 0
@@ -41,6 +41,22 @@ exports.validateRefreshToken = (data) => {
 
     if (!refreshToken)
         result.errors.push({...ERRORS.FIELDS.REQUIRED, field: "refreshToken"});
+
+    return result.errors.length === 0
+        ? {isCorrect: true, errors: []}
+        : result;
+};
+
+exports.validateUpdatePassword = (data) => {
+    const { oldPassword, newPassword } = data;
+    const result = {isCorrect: false, errors: []};
+
+    if (!oldPassword)
+        result.errors.push({...ERRORS.FIELDS.REQUIRED, field: "oldPassword"});
+    if (!newPassword)
+        result.errors.push({...ERRORS.FIELDS.REQUIRED, field: "newPassword"});
+    if (newPassword && !validator.isByteLength(newPassword, {min: Number(process.env.MIN_PASSWORD_LENGTH)}))
+        result.errors.push({...ERRORS.FIELDS.WEAK_PASSWORD, field: "password"});
 
     return result.errors.length === 0
         ? {isCorrect: true, errors: []}

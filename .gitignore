@@ -25,6 +25,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-/Storage
+/storage
 
 /src/styles/reduction.css

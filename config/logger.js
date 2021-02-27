@@ -5,7 +5,7 @@ const winstonRotator = require('winston-daily-rotate-file');
 const transport = new winstonRotator({
     'name': 'error-file',
     // 'level': 'error',
-    'filename': './Storage/logs/log_%DATE%.txt',
+    'filename': './storage/logs/log_%DATE%.txt',
     'json': false,
     'datePattern': 'YYYY_MM_DD',
     'prepend': true,

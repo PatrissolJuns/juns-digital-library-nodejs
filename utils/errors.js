@@ -15,12 +15,16 @@ const ERRORS = {
             code: "users/email-already-exists",
             message: "Email already exists",
         },
+        INCORRECT_OLD_PASSWORD: {
+            code: "users/old-password-incorrect",
+            message: "Incorrect old password",
+        }
     },
     FIELDS: {
         REQUIRED: {
             code: "fields/required",
             message: "This field is required",
-            field: "",
+            field: "title",
         },
         INVALID_EMAIL: {
             code: "fields/invalid-email",
@@ -39,6 +43,20 @@ const ERRORS = {
         INTERNAL_SERVER_ERROR: {
             code: "server/internal-server-error",
             message: "Internal server error",
+        }
+    },
+    FOLDERS: {
+        NAME_ALREADY_EXISTS: {
+            code: "folders/name-already-exists",
+            message: "The name specified is already in use",
+        },
+        UNKNOWN_FOLDER: {
+            code: "folders/unknown-folder",
+            message: "Unknown parent id",
+        },
+        UNKNOWN_PARENT_FOLDER: {
+            code: "folders/unknown-parent-folder",
+            message: "Unknown parent folder id",
         }
     }
 };

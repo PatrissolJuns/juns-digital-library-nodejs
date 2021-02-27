@@ -30,6 +30,7 @@ function jwt() {
         path: [
             // public routes that don't require authentication
             '/api/users/authenticate',
+            '/api/users/signin',
             '/api/users/register',
             '/api/users/refresh-token',
         ]
