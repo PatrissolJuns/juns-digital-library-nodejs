@@ -3,7 +3,6 @@ const mongoose = require('mongoose');
 const FolderSchema = new mongoose.Schema({
     name: {
         type: String,
-        unique: true,
         required: [true, "The name field is required"],
     },
     userId: {
@@ -11,16 +10,8 @@ const FolderSchema = new mongoose.Schema({
         required: [true, "The userId field is required"],
         type: mongoose.Types.ObjectId
     },
-    parent: {
-        type: String | null,
-        /*validate: {
-            validator: function(v) {
-                return v ? true : true;
-                // return v ? mongoose.isValidObjectId(v) : true;
-            },
-            message: props => `${props.value} is not a valid folder!`
-        },*/
-    },
+    description: String,
+    parentFolderId: String | null,
     createdAt: String | Number,
     updatedAt: String | Number,
     deletedAt: String | Number | null,

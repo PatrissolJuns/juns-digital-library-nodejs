@@ -28,6 +28,14 @@ const AudioSchema = new mongoose.Schema({
     deletedAt: String | Number | null,
 }, { versionKey: false });
 
+AudioSchema.set('toJSON', {
+    transform: function(doc, ret, options) {
+        const result = {id: ret._id, ...ret};
+        delete result._id;
+        return result;
+    }
+});
+
 AudioSchema.pre('save', function(next) {
     this.createdAt = Date.now();
     this.updatedAt = Date.now();
