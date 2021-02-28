@@ -1,5 +1,10 @@
+const _ = require('lodash');
+const du = require('du');
 const fs = require('fs');
 const glob = require("glob");
+const {forAsync} = require('./index');
+const FileType = require('file-type');
+const ffmpeg = require('fluent-ffmpeg');
 
 /* Check directory */
 /**
@@ -7,7 +12,7 @@ const glob = require("glob");
  * @param path
  * @param cb
  */
-function isDirectory(path, cb) {
+const isDirectory = (path, cb) => {
     if (typeof cb !== 'function') {
         throw new Error('expected a callback function');
     }
@@ -28,7 +33,8 @@ function isDirectory(path, cb) {
         }
         cb(null, stats.isDirectory());
     });
-}
+};
+
 // Sync version
 isDirectory.sync = function isDirectorySync(path) {
     if (typeof path !== 'string') {
@@ -53,7 +59,7 @@ isDirectory.sync = function isDirectorySync(path) {
  * @param cb
  * @returns {*}
  */
-function isFile(path, cb){
+const isFile = (path, cb) => {
     if (typeof cb !== 'function') {
         throw new Error('expected a callback function');
     }
@@ -67,7 +73,8 @@ function isFile(path, cb){
         if(err) return cb(err);
         return cb(null, stats.isFile());
     });
-}
+};
+
 // Sync version
 isFile.sync = function isFileSync(path) {
     return fs.existsSync(path) && fs.statSync(path).isFile();
@@ -80,8 +87,12 @@ const getUserStoragePath = id => `${process.cwd()}/${process.env.USERS_STORAGE_D
 
 /**
  *
+ * @param name
+ * @param type
+ * @param userId
+ * @returns {string[]|*}
  */
-function findStoragePath (name, type, userId) {
+const findStoragePath = (name, type, userId) => {
     if (!userId) {
         throw new Error("UNKNOWN_USER");
     }
@@ -106,18 +117,139 @@ function findStoragePath (name, type, userId) {
     } catch (e) {
         throw e;
     }
-}
+};
 
 /**
- * Get absolute path of a given folder name
+ * Get absolute path of a given name
+ * @param name
  * @param userId
- * @param folderParentId
  * @returns {string}
  */
-const getFolderAbsolutePath = (userId, folderParentId = null) => {
+const getAbsolutePath = (name, userId) => {
+    if (!name && !userId) {
+        throw new Error("INVALID_USER_AND_NAME");
+    }
+
     try {
-        const result = findStoragePath(folderParentId, 'd', userId);
-        return result[0];
+        const basePath = getUserStoragePath(userId);
+        // Get matches path, the length would be 1 since folders' name is folders' id
+        const matches = glob.sync(`**/*${name}*`, {cwd: basePath});
+        // Prepend the base path
+        return matches.map(item => `${basePath + item}`)[0];
+    } catch (e) {
+        throw e;
+    }
+};
+
+/**
+ * Get all sub-folders and files of a folder
+ * @param absoluteFolderPath {string}
+ * @returns {*}
+ */
+const getFolderSubContent = (absoluteFolderPath) => {
+    try {
+        const matches = glob.sync(`**`, {cwd: absoluteFolderPath});
+        return matches.map(item => `${absoluteFolderPath}/${item}`);
+    } catch (e) {
+        throw e;
+    }
+};
+
+/**
+ * Return an object size of a folder which contains 2 fields
+ * @param absoluteFolderPath
+ * @returns {Promise<{size: *, formattedSize: string}>}
+ */
+const getFolderSize = async (absoluteFolderPath) => {
+    let size;
+    try {
+        size = await du(absoluteFolderPath);
+    } catch (e) {
+        throw e;
+    }
+
+    if (size > 1024 * 1024 * 1024)
+        return {
+            originalSize: size,
+            formattedSize: `${_.round(size / (1024 * 1024 * 1024), 2)} GB`,
+        };
+    else if (size > 1024 * 1024)
+        return {
+            originalSize: size,
+            formattedSize: `${_.round(size / (1024 * 1024), 2)} MB`,
+        };
+    else if (size > 1024)
+        return {
+            originalSize: size,
+            formattedSize: `${_.round(size / 1024, 2)} KB`,
+        };
+    else return {
+        originalSize: size,
+        formattedSize: `${_.round(size, 2)} Bytes`,
+    }
+};
+
+/**
+ * Get following info
+ *   - number of folders
+ *   - number of files
+ *   - number of audios
+ *   - number of videos
+ * @param absoluteFolderPath
+ * @returns {Promise<{folders, audios, videos}&{files: number}>}
+ */
+const getFolderNumberStats = async (absoluteFolderPath) => {
+    // Initialize the counters
+    const result = {audios: 0, videos: 0, folders: 0};
+    try {
+        // Get all contents of a folders i.e sub-folders and files
+        let contents = getFolderSubContent(absoluteFolderPath);
+
+        // For each file or folder, increment counters
+        await forAsync(contents, (item, index) => {
+            return new Promise(async (resolve, reject) => {
+                // If is a directory, increment the folder counter
+                if (isDirectory.sync(item)) {
+                    result.folders = result.folders + 1;
+                    return resolve();
+                }
+
+                let fileType;
+                try {
+                    // Try to get file type of current file
+                    fileType = await FileType.fromFile(item);
+                } catch (e) {
+                    return reject(e);
+                }
+
+                // If file is audio or video then try to distinguish them
+                if (fileType && (fileType.mime.includes('audio') || fileType.mime.includes('video'))) {
+                    ffmpeg(item).ffprobe(function (err, data) {
+                        if (err) {
+                            return reject(err);
+                        }
+
+                        // Check if the data contains at least one codec type equals to "video"
+                        // In that case, the file is a video
+                        if (data.streams.find(i => i.codec_type === 'video')) {
+                            result.videos = result.videos + 1;
+                            return resolve();
+                        } else {
+                            // Otherwise the file is an audio
+                            result.audios = result.audios + 1;
+                            return resolve();
+                        }
+                    });
+                }
+
+                // Otherwise skip the file
+                else return resolve();
+            });
+        });
+        return {
+            ...result,
+            files: result.audios + result.videos
+        };
     } catch (e) {
         throw e;
     }
@@ -126,7 +258,10 @@ const getFolderAbsolutePath = (userId, folderParentId = null) => {
 module.exports = {
     isFile,
     isDirectory,
+    getFolderSize,
     findStoragePath,
+    getAbsolutePath,
     getUserStoragePath,
-    getFolderAbsolutePath,
+    getFolderSubContent,
+    getFolderNumberStats,
 };

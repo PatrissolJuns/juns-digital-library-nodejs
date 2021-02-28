@@ -1,4 +1,3 @@
-const fs = require('./fs');
 const {ERRORS, MONGODB_ERRORS_CODE} = require('../utils/errors');
 
 /**
@@ -66,7 +65,6 @@ const error500 = (res) => {
 };
 
 module.exports = {
-    ...fs,
     forAsync,
     error500,
     getErrors,

@@ -23,6 +23,14 @@ FolderSchema.pre('save', function(next) {
     next();
 });
 
+FolderSchema.set('toJSON', {
+    transform: function(doc, ret, options) {
+        const result = {id: ret._id, ...ret};
+        delete result._id;
+        return result;
+    }
+});
+
 FolderSchema.pre('update', function(next) {
     this.updatedAt = Date.now();
     next();

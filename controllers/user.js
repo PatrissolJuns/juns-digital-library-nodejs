@@ -4,9 +4,10 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const logger = require('../config/logger');
+const {getErrors, error500} = require('../helpers');
 const UserValidator = require('../validations/user');
+const {getUserStoragePath} = require('../helpers/fs');
 const {ERRORS, MONGODB_ERRORS_CODE} = require('../utils/errors');
-const {getErrors, error500, getUserStoragePath} = require('../helpers');
 
 
 /**

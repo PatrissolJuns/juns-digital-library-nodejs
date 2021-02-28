@@ -1,9 +1,11 @@
+const du = require('du');
 const fs = require('fs');
 const Folder = require('../models/Folder');
 const logger = require('../config/logger');
+const {getErrors} = require('../helpers');
 const {ERRORS} = require('../utils/errors');
 const AudioController = require('../controllers/audio');
-const {getErrors, getFolderAbsolutePath} = require('../helpers');
+const {getAbsolutePath, getFolderSize, getFolderNumberStats} = require('../helpers/fs');
 
 /**
  * Check if a given folderId exists
@@ -39,10 +41,20 @@ const checkFolder = async (folderId, isParent = false) => {
  * @returns {Promise<void>}
  */
 exports.getFolderContent = async (socket, outputEvent, data) => {
+    console.log("data => ", data);
+    if (!data || typeof data !== "object" || !data.hasOwnProperty('folderId')) {
+        return socket.emit(outputEvent, {
+            status: false,
+            errors: [{...ERRORS.FIELDS.REQUIRED, field: "folderId"}]
+        });
+    }
     // Check if the folder exists
-    const _checkFolder = await checkFolder(data.folderId, false);
-    if (!_checkFolder.status) {
-        return socket.emit(outputEvent, _checkFolder)
+    let _checkFolder;
+    if (data.folderId) {
+        _checkFolder = await checkFolder(data.folderId, false);
+        if (!_checkFolder.status) {
+            return socket.emit(outputEvent, _checkFolder)
+        }
     }
 
     // Get the proper content
@@ -51,7 +63,11 @@ exports.getFolderContent = async (socket, outputEvent, data) => {
             Folder.find({parentFolderId: data.folderId, userId: socket.handshake.user._id}),
             AudioController.find({folder: data.folderId, userId: socket.handshake.user._id})
         ]);
-        socket.emit(outputEvent, {status: true, data: {folders, audios, content: [folders, audios]}});
+        socket.emit(outputEvent, {status: true, data: {
+            folders,
+            audios,
+            folder: data.folderId ? _checkFolder.folder : {id: null}
+        }});
     } catch (e) {
         socket.emit(outputEvent, {status: false, error: e, message: "Error while getting content folder"});
     }
@@ -82,8 +98,9 @@ exports.createFolder = async (socket, outputEvent, data) => {
     });
 
     // Path of the new folder
-    const path = getFolderAbsolutePath(socket.handshake.user._id, parentFolderId) + folder._id;
+    let path;
     try {
+        path = getAbsolutePath(parentFolderId, socket.handshake.user._id) + folder._id;
         // Create folder into the data
         const newFolder = await folder.save();
         // Create physical folder
@@ -121,7 +138,7 @@ exports.createFolder = async (socket, outputEvent, data) => {
  */
 exports.rename = (socket, outputEvent, data) => {
     if (!data.name) {
-        socket.emit(outputEvent, {
+        return socket.emit(outputEvent, {
             status: false,
             errors: [{...ERRORS.FIELDS.REQUIRED, field: "name"}]
         });
@@ -133,6 +150,53 @@ exports.rename = (socket, outputEvent, data) => {
             socket.emit(outputEvent, {status: true, data: folder});
         })
         .catch(error => {
-            socket.emit(outputEvent, {status: false, error: error, message: "Error while renaming a folder"});
+            logger.error("Error while renaming a folder " + JSON.stringify(data) + ". The error: " + error);
+            socket.emit(outputEvent, {
+                status: false,
+                errors: getErrors(ERRORS.SERVER.INTERNAL_SERVER_ERROR).errors,
+            });
         });
+};
+
+/**
+ * Get details of a folder
+ * @param socket
+ * @param outputEvent
+ * @param data
+ * @returns {Promise<*>}
+ */
+exports.getDetails = async (socket, outputEvent, data) => {
+    if (!data || typeof data !== "object" || !data.folderId) {
+        return socket.emit(outputEvent, {
+            status: false,
+            errors: [{...ERRORS.FIELDS.REQUIRED, field: "folderId"}]
+        });
+    }
+    try {
+        const absoluteFolderPath = getAbsolutePath(data.folderId);
+
+        let [folder, size, lstat, numberOf] = await Promise.all([
+            Folder.findById(data.folderId),
+            getFolderSize(absoluteFolderPath),
+            fs.promises.lstat(absoluteFolderPath),
+            getFolderNumberStats(absoluteFolderPath)
+        ]);
+
+         const result = {
+             size,
+             type: 'Folder',
+             lastAccessedDate: lstat.atimeMs,
+             lastModifiedDate: lstat.mtimeMs,
+             numberOf,
+             ...folder.toJSON(),
+         };
+
+        return socket.emit(outputEvent, {status: true, data: result});
+    } catch (error) {
+        logger.error("Error while getting folder details " + JSON.stringify(data) + ". The error: " + error);
+        return socket.emit(outputEvent, {
+            status: false,
+            errors: getErrors(ERRORS.SERVER.INTERNAL_SERVER_ERROR).errors,
+        });
+    }
 };

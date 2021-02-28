@@ -11,6 +11,10 @@ const FOLDERS = {
         INPUT: 'folders:one:rename:input',
         OUTPUT: 'folders:one:rename:output',
     },
+    DETAILS: {
+        INPUT: 'folders:one:details:input',
+        OUTPUT: 'folders:one:details:output',
+    }
 };
 
 const PLAYLISTS = {
