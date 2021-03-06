@@ -132,10 +132,18 @@ const getAbsolutePath = (name, userId) => {
 
     try {
         const basePath = getUserStoragePath(userId);
+
+        // If there is no name, it means that we are on the root folder
+        // So we return the root path
+        if (!name) {
+            return basePath + '/';
+        }
+
         // Get matches path, the length would be 1 since folders' name is folders' id
         const matches = glob.sync(`**/*${name}*`, {cwd: basePath});
+
         // Prepend the base path
-        return matches.map(item => `${basePath + item}`)[0];
+        return matches.map(item => `${basePath}/${item}${item[item.length - 1] === '/' ? '' : '/'}`)[0];
     } catch (e) {
         throw e;
     }
