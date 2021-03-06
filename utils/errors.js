@@ -52,7 +52,7 @@ const ERRORS = {
         },
         UNKNOWN_FOLDER: {
             code: "folders/unknown-folder",
-            message: "Unknown parent id",
+            message: "Unknown folder id",
         },
         UNKNOWN_PARENT_FOLDER: {
             code: "folders/unknown-parent-folder",

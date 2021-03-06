@@ -1,8 +1,7 @@
-const du = require('du');
 const fs = require('fs');
+const {getErrors} = require('../helpers');
 const Folder = require('../models/Folder');
 const logger = require('../config/logger');
-const {getErrors} = require('../helpers');
 const {ERRORS} = require('../utils/errors');
 const AudioController = require('../controllers/audio');
 const {getAbsolutePath, getFolderSize, getFolderNumberStats} = require('../helpers/fs');
@@ -25,7 +24,7 @@ const checkFolder = async (folderId, isParent = false) => {
                 errors: getErrors(ERRORS.FOLDERS[!isParent ? 'UNKNOWN_FOLDER' : 'UNKNOWN_PARENT_FOLDER']).errors,
             };
     } catch (error) {
-        logger.error("Error while looking for a folder " + JSON.stringify(data.folderId) + ". The error: " + error);
+        logger.error("Error while looking for a folder " + JSON.stringify(folderId) + ". The error: " + error);
         return {
             status: false,
             errors: getErrors(ERRORS.SERVER.INTERNAL_SERVER_ERROR).errors,
@@ -41,9 +40,9 @@ const checkFolder = async (folderId, isParent = false) => {
  * @returns {Promise<void>}
  */
 exports.getFolderContent = async (socket, outputEvent, data) => {
-    console.log("data => ", data);
     if (!data || typeof data !== "object" || !data.hasOwnProperty('folderId')) {
         return socket.emit(outputEvent, {
+            outputEvent,
             status: false,
             errors: [{...ERRORS.FIELDS.REQUIRED, field: "folderId"}]
         });
@@ -68,8 +67,13 @@ exports.getFolderContent = async (socket, outputEvent, data) => {
             audios,
             folder: data.folderId ? _checkFolder.folder : {id: null}
         }});
-    } catch (e) {
-        socket.emit(outputEvent, {status: false, error: e, message: "Error while getting content folder"});
+    } catch (error) {
+        logger.error("Error while getting content of folder " + JSON.stringify(data) + ". The error: " + error);
+        socket.emit(outputEvent, {
+            outputEvent,
+            status: false,
+            errors: getErrors(ERRORS.SERVER.INTERNAL_SERVER_ERROR).errors,
+        });
     }
 };
 
@@ -80,7 +84,7 @@ exports.getFolderContent = async (socket, outputEvent, data) => {
  * @param data
  */
 exports.createFolder = async (socket, outputEvent, data) => {
-    const parentFolderId = data.parentId || null;
+    const parentFolderId = data.parentFolderId || null;
     // Check if parent folder exists i.e is equal to correct FolderId or null
     if (parentFolderId) {
         // Check if the folder exists
@@ -118,11 +122,13 @@ exports.createFolder = async (socket, outputEvent, data) => {
 
         if (error.code === 11000) {
             socket.emit(outputEvent, {
+                outputEvent,
                 status: false,
                 errors: getErrors(ERRORS.FOLDERS.NAME_ALREADY_EXISTS).errors
             });
         } else {
             socket.emit(outputEvent, {
+                outputEvent,
                 status: false,
                 errors: getErrors(ERRORS.SERVER.INTERNAL_SERVER_ERROR).errors,
             });
@@ -139,6 +145,7 @@ exports.createFolder = async (socket, outputEvent, data) => {
 exports.rename = (socket, outputEvent, data) => {
     if (!data.name) {
         return socket.emit(outputEvent, {
+            outputEvent,
             status: false,
             errors: [{...ERRORS.FIELDS.REQUIRED, field: "name"}]
         });
@@ -152,6 +159,7 @@ exports.rename = (socket, outputEvent, data) => {
         .catch(error => {
             logger.error("Error while renaming a folder " + JSON.stringify(data) + ". The error: " + error);
             socket.emit(outputEvent, {
+                outputEvent,
                 status: false,
                 errors: getErrors(ERRORS.SERVER.INTERNAL_SERVER_ERROR).errors,
             });
@@ -168,12 +176,13 @@ exports.rename = (socket, outputEvent, data) => {
 exports.getDetails = async (socket, outputEvent, data) => {
     if (!data || typeof data !== "object" || !data.folderId) {
         return socket.emit(outputEvent, {
+            outputEvent,
             status: false,
             errors: [{...ERRORS.FIELDS.REQUIRED, field: "folderId"}]
         });
     }
     try {
-        const absoluteFolderPath = getAbsolutePath(data.folderId);
+        const absoluteFolderPath = getAbsolutePath(data.folderId, socket.handshake.user._id);
 
         let [folder, size, lstat, numberOf] = await Promise.all([
             Folder.findById(data.folderId),
@@ -195,6 +204,49 @@ exports.getDetails = async (socket, outputEvent, data) => {
     } catch (error) {
         logger.error("Error while getting folder details " + JSON.stringify(data) + ". The error: " + error);
         return socket.emit(outputEvent, {
+            outputEvent,
+            status: false,
+            errors: getErrors(ERRORS.SERVER.INTERNAL_SERVER_ERROR).errors,
+        });
+    }
+};
+
+/**
+ * Return array of folder representing relative path to get a given folder
+ * @param socket
+ * @param outputEvent
+ * @param data
+ * @returns {Promise<*>}
+ */
+exports.getEmplacement = async (socket, outputEvent, data) => {
+    if (!data || typeof data !== "object" || !data.hasOwnProperty('folderId')) {
+        return socket.emit(outputEvent, {
+            outputEvent,
+            status: false,
+            errors: [{...ERRORS.FIELDS.REQUIRED, field: "folderId"}]
+        });
+    }
+    try {
+        // If it's null return empty emplacement
+        if (!data.folderId) {
+            return socket.emit(outputEvent, {status: true, data: []});
+        }
+
+        const userBasePath = getAbsolutePath(null, socket.handshake.user._id);
+        const absoluteFolderPath = getAbsolutePath(data.folderId, socket.handshake.user._id);
+        // Remove user base path and come out with relative path
+        const matchPath = absoluteFolderPath.replace(userBasePath, '');
+        // Get folder's list
+        const folders = matchPath.split('/').filter(Boolean);
+        // Remove empty string
+        const response = await Folder.find({_id: {$in: folders}});
+
+        // Make sure we keep the order
+        socket.emit(outputEvent, {status: true, data: folders.map(f => response.find(item => `${item._id}` === f))});
+    } catch (e) {
+        logger.error("Error while getting folder emplacement " + JSON.stringify(data) + ". The error: " + e);
+        return socket.emit(outputEvent, {
+            outputEvent,
             status: false,
             errors: getErrors(ERRORS.SERVER.INTERNAL_SERVER_ERROR).errors,
         });

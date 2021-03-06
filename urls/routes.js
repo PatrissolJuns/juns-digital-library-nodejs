@@ -14,6 +14,10 @@ const FOLDERS = {
     DETAILS: {
         INPUT: 'folders:one:details:input',
         OUTPUT: 'folders:one:details:output',
+    },
+    EMPLACEMENT: {
+        INPUT: 'folders:one:emplacement:input',
+        OUTPUT: 'folders:one:emplacement:output',
     }
 };
 
