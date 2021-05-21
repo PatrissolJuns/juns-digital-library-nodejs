@@ -1,4 +1,6 @@
+
 const fs = require('fs');
+const mongoose = require('mongoose');
 const {getErrors} = require('../helpers');
 const Folder = require('../models/Folder');
 const logger = require('../config/logger');
@@ -13,6 +15,14 @@ const {getAbsolutePath, getFolderSize, getFolderNumberStats} = require('../helpe
  * @returns {Promise<{errors: {code: *, message: *}[], status: boolean}|*>}
  */
 const checkFolder = async (folderId, isParent = false) => {
+    // First check if the id is a valid one
+    if (!mongoose.isValidObjectId(folderId)) {
+        return {
+            status: false,
+            errors: getErrors(ERRORS.FOLDERS[!isParent ? 'UNKNOWN_FOLDER' : 'UNKNOWN_PARENT_FOLDER']).errors,
+        };
+    }
+
     let folder;
     try {
         // Check if the folder exists
@@ -193,7 +203,7 @@ exports.getDetails = async (socket, outputEvent, data) => {
 
          const result = {
              size,
-             type: 'Folder',
+             type: 'folder',
              lastAccessedDate: lstat.atimeMs,
              lastModifiedDate: lstat.mtimeMs,
              numberOf,
