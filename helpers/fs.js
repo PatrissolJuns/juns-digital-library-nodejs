@@ -83,7 +83,7 @@ isFile.sync = function isFileSync(path) {
 /**
  * Get absolute path of user's storage directory
  */
-const getUserStoragePath = id => `${process.cwd()}/${process.env.USERS_STORAGE_DIR}${id || ''}`;
+const getUserStoragePath = id => `${process.cwd()}/${process.env.USERS_STORAGE_DIR}/${id || ''}`;
 
 /**
  *

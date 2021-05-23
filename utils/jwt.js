@@ -1,7 +1,6 @@
-const expressJwt = require('express-jwt');
 const User = require('../models/User');
-
-module.exports = jwt;
+const expressJwt = require('express-jwt');
+const {STORAGE} = require('../urls/routes');
 
 /**
  * Revoke a token if the user is no more in the database
@@ -33,6 +32,9 @@ function jwt() {
             '/api/users/signin',
             '/api/users/register',
             '/api/users/refresh-token',
+            STORAGE.BASE
         ]
     });
 }
+
+module.exports = jwt;

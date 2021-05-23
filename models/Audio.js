@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const {getFileNameInfo} = require('../helpers');
 
 const AudioSchema = new mongoose.Schema({
     artist: String,
@@ -32,6 +33,8 @@ AudioSchema.set('toJSON', {
     transform: function(doc, ret, options) {
         const result = {id: ret._id, ...ret};
         delete result._id;
+        result._cover = getFileNameInfo(result.cover);
+        result._title = getFileNameInfo(result.title);
         return result;
     }
 });

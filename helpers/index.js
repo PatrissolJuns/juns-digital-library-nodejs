@@ -1,4 +1,5 @@
-const {ERRORS, MONGODB_ERRORS_CODE} = require('../utils/errors');
+const {ERRORS} = require('../utils/errors');
+const {MEDIA_TYPE, EXTENSIONS_FULL_LIST} = require('../constants');
 
 /**
  * Generate a unique id
@@ -7,16 +8,65 @@ const {ERRORS, MONGODB_ERRORS_CODE} = require('../utils/errors');
 const generateId = () => new Date().valueOf().toString(36) + Math.random().toString(36).substr(2);
 
 /**
- * Get extension from mime type
+ * Try to find extension from mime type
  * @param mimeType
  * @returns {string}
  */
 const getFileExtensionFromMimeType = (mimeType) => {
-    const extensions = JSON.parse('{"png":["image\/png","image\/x-png"],"bmp":["image\/bmp","image\/x-bmp","image\/x-bitmap","image\/x-xbitmap","image\/x-win-bitmap","image\/x-windows-bmp","image\/ms-bmp","image\/x-ms-bmp","application\/bmp","application\/x-bmp","application\/x-win-bitmap"],"gif":["image\/gif"],"jpeg":["image\/jpeg","image\/pjpeg"],"xspf":["application\/xspf+xml"],"vlc":["application\/videolan"],"wmv":["video\/x-ms-wmv","video\/x-ms-asf"],"au":["audio\/x-au"],"ac3":["audio\/ac3"],"flac":["audio\/x-flac"],"ogg":["audio\/ogg","video\/ogg","application\/ogg"],"kmz":["application\/vnd.google-earth.kmz"],"kml":["application\/vnd.google-earth.kml+xml"],"rtx":["text\/richtext"],"rtf":["text\/rtf"],"jar":["application\/java-archive","application\/x-java-application","application\/x-jar"],"zip":["application\/x-zip","application\/zip","application\/x-zip-compressed","application\/s-compressed","multipart\/x-zip"],"7zip":["application\/x-compressed"],"xml":["application\/xml","text\/xml"],"svg":["image\/svg+xml"],"3g2":["video\/3gpp2"],"3gp":["video\/3gp","video\/3gpp"],"mp4":["video\/mp4"],"m4a":["audio\/x-m4a"],"f4v":["video\/x-f4v"],"flv":["video\/x-flv"],"webm":["video\/webm"],"aac":["audio\/x-acc"],"m4u":["application\/vnd.mpegurl"],"pdf":["application\/pdf","application\/octet-stream"],"pptx":["application\/vnd.openxmlformats-officedocument.presentationml.presentation"],"ppt":["application\/powerpoint","application\/vnd.ms-powerpoint","application\/vnd.ms-office","application\/msword"],"docx":["application\/vnd.openxmlformats-officedocument.wordprocessingml.document"],"xlsx":["application\/vnd.openxmlformats-officedocument.spreadsheetml.sheet","application\/vnd.ms-excel"],"xl":["application\/excel"],"xls":["application\/msexcel","application\/x-msexcel","application\/x-ms-excel","application\/x-excel","application\/x-dos_ms_excel","application\/xls","application\/x-xls"],"xsl":["text\/xsl"],"mpeg":["video\/mpeg"],"mov":["video\/quicktime"],"avi":["video\/x-msvideo","video\/msvideo","video\/avi","application\/x-troff-msvideo"],"movie":["video\/x-sgi-movie"],"log":["text\/x-log"],"txt":["text\/plain"],"css":["text\/css"],"html":["text\/html"],"wav":["audio\/x-wav","audio\/wave","audio\/wav"],"xhtml":["application\/xhtml+xml"],"tar":["application\/x-tar"],"tgz":["application\/x-gzip-compressed"],"psd":["application\/x-photoshop","image\/vnd.adobe.photoshop"],"exe":["application\/x-msdownload"],"js":["application\/x-javascript"],"mp3":["audio\/mpeg","audio\/mpg","audio\/mpeg3","audio\/mp3"],"rar":["application\/x-rar","application\/rar","application\/x-rar-compressed"],"gzip":["application\/x-gzip"],"hqx":["application\/mac-binhex40","application\/mac-binhex","application\/x-binhex40","application\/x-mac-binhex40"],"cpt":["application\/mac-compactpro"],"bin":["application\/macbinary","application\/mac-binary","application\/x-binary","application\/x-macbinary"],"oda":["application\/oda"],"ai":["application\/postscript"],"smil":["application\/smil"],"mif":["application\/vnd.mif"],"wbxml":["application\/wbxml"],"wmlc":["application\/wmlc"],"dcr":["application\/x-director"],"dvi":["application\/x-dvi"],"gtar":["application\/x-gtar"],"php":["application\/x-httpd-php","application\/php","application\/x-php","text\/php","text\/x-php","application\/x-httpd-php-source"],"swf":["application\/x-shockwave-flash"],"sit":["application\/x-stuffit"],"z":["application\/x-compress"],"mid":["audio\/midi"],"aif":["audio\/x-aiff","audio\/aiff"],"ram":["audio\/x-pn-realaudio"],"rpm":["audio\/x-pn-realaudio-plugin"],"ra":["audio\/x-realaudio"],"rv":["video\/vnd.rn-realvideo"],"jp2":["image\/jp2","video\/mj2","image\/jpx","image\/jpm"],"tiff":["image\/tiff"],"eml":["message\/rfc822"],"pem":["application\/x-x509-user-cert","application\/x-pem-file"],"p10":["application\/x-pkcs10","application\/pkcs10"],"p12":["application\/x-pkcs12"],"p7a":["application\/x-pkcs7-signature"],"p7c":["application\/pkcs7-mime","application\/x-pkcs7-mime"],"p7r":["application\/x-pkcs7-certreqresp"],"p7s":["application\/pkcs7-signature"],"crt":["application\/x-x509-ca-cert","application\/pkix-cert"],"crl":["application\/pkix-crl","application\/pkcs-crl"],"pgp":["application\/pgp"],"gpg":["application\/gpg-keys"],"rsa":["application\/x-pkcs7"],"ics":["text\/calendar"],"zsh":["text\/x-scriptzsh"],"cdr":["application\/cdr","application\/coreldraw","application\/x-cdr","application\/x-coreldraw","image\/cdr","image\/x-cdr","zz-application\/zz-winassoc-cdr"],"wma":["audio\/x-ms-wma"],"vcf":["text\/x-vcard"],"srt":["text\/srt"],"vtt":["text\/vtt"],"ico":["image\/x-icon","image\/x-ico","image\/vnd.microsoft.icon"],"csv":["text\/x-comma-separated-values","text\/comma-separated-values","application\/vnd.msexcel"],"json":["application\/json","text\/json"]}');
+    const extensions = JSON.parse(EXTENSIONS_FULL_LIST);
     const extMap = Object.entries(extensions);
     for (let i = 0; i < extMap.length; i++) {
         if (extMap[i][1].includes(mimeType))
             return extMap[i][0];
+    }
+};
+
+/**
+ * Get default media extension according to media type
+ * @param mediaType
+ * @returns {string}
+ */
+const getDefaultMediaExtension = mediaType => {
+    switch (mediaType) {
+        case MEDIA_TYPE.AUDIO:
+            return 'mp3';
+        case MEDIA_TYPE.VIDEO:
+            return 'mp4';
+        default:
+            return 'jpg';
+    }
+};
+
+/**
+ * Get extension from mime type
+ * @param mimeType
+ * @param mediaType from MEDIA_TYPE constant
+ * @returns {string}
+ */
+const geMediaExtensionFromMimeType = (mimeType, mediaType) => {
+    // Check if we're treating audio, video or image
+    if (!/audio|video|image/.test(mimeType))
+        return getDefaultMediaExtension(mediaType);
+    // Get media extension
+    let extension = getFileExtensionFromMimeType(mimeType);
+    // In case of not found, return default one
+    if (!extension)
+        extension = getDefaultMediaExtension(mediaType);
+
+    return extension;
+};
+
+/**
+ * Get base and extension from a file name
+ * @param fileName
+ * @returns {{ext: (string), base: string}}
+ */
+const getFileNameInfo = fileName => {
+    const _baseFileName = fileName.split('.');
+    // Get baseFilename
+    return {
+        ext: _baseFileName[_baseFileName.length - 1],
+        base: _baseFileName.slice(0, _baseFileName.length - 1).join(''),
     }
 };
 
@@ -46,7 +96,7 @@ const forAsync = (arr, work) => {
 };
 
 /**
- * Return the response error
+ * Return the error response
  * @returns {{errors: {code: *, message: *}[], status: number}}
  * @param errors
  */
@@ -60,6 +110,17 @@ const getErrors = (...errors) => {
     }
 };
 
+/**
+ * Return the success response
+ * @param data
+ * @param message
+ */
+const getSuccess = (data, message = 'Success') => ({
+    data,
+    message,
+    status: 200,
+});
+
 const error500 = (res) => {
     return res.status(500).json({status: 500, errors: [ERRORS.SERVER.INTERNAL_SERVER_ERROR]});
 };
@@ -68,6 +129,9 @@ module.exports = {
     forAsync,
     error500,
     getErrors,
+    getSuccess,
     generateId,
+    getFileNameInfo,
+    geMediaExtensionFromMimeType,
     getFileExtensionFromMimeType,
 };

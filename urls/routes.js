@@ -1,3 +1,5 @@
+const {mediaConfig} = require('../config');
+
 const FOLDERS = {
     CONTENT: {
         INPUT: 'folders:one:content:input',
@@ -74,19 +76,23 @@ const AUDIOS = {
     },
 };
 
-const STORAGE_AUDIOS = {
-    ROUTE: '/file/audios',
-    DESTINATION: '/' + process.env.AUDIOS_STORAGE_DIR,
-};
-const STORAGE_IMAGES = {
-    ROUTE: '/file/images',
-    DESTINATION: '/' + process.env.IMAGES_STORAGE_DIR,
+const STORAGE = {
+    BASE: mediaConfig.media.baseUrl,
+    AUDIOS: {
+        HLS: mediaConfig.audio.hls.url,
+        RAW: mediaConfig.audio.raw.url,
+        COVER: mediaConfig.audio.cover.url,
+    },
+    VIDEOS: {
+        HLS: mediaConfig.video.hls.url,
+        RAW: mediaConfig.video.raw.url,
+        COVER: mediaConfig.video.cover.url,
+    },
 };
 
 module.exports = {
     AUDIOS,
     FOLDERS,
+    STORAGE,
     PLAYLISTS,
-    STORAGE_AUDIOS,
-    STORAGE_IMAGES
 };

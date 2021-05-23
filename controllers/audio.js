@@ -1,17 +1,25 @@
 const fs = require('fs');
 const btoa = require('btoa');
+const multer = require('multer');
 const mm = require('music-metadata');
 const Audio = require('../models/Audio');
+const {ERRORS} = require('../utils/errors');
+const logger = require('./../config/logger');
+const {mediaConfig, baseSubDirConfig} = require('../config');
+const {MEDIA_TYPE} = require('../constants');
 const PlaylistController = require('../controllers/playlist');
-const { getFileExtensionFromMimeType } = require('../helpers');
+const { getErrors, geMediaExtensionFromMimeType } = require('../helpers');
+const stream = require('../media-processing/stream');
+const {audioMulter} = require('../media-processing/multerConfig');
 
 
 /**
  * Returns various property of an audio
  * @param audio
+ * @param audioId
  * @returns {Promise<any>}
  */
-const getAudioInformation = (audio) => {
+const getAudioInformation = (audio, audioId) => {
     return new Promise(async (resolve, reject) => {
         try {
             // Get metadata
@@ -20,7 +28,7 @@ const getAudioInformation = (audio) => {
             const image = mm.selectCover(metadata.common.picture);
 
             // Initialize default cover art
-            let cover = process.env.DEFAULT_AUDIO_COVER, base64String = "";
+            let cover = process.env.DEFAULT_AUDIO_COVER, base64String = "", baseFileName = '', extension = '';
 
             // Try to save cover art
             if (image) {
@@ -33,17 +41,23 @@ const getAudioInformation = (audio) => {
                 var base64 = "data:" + image.format + ";base64," +  btoa(base64String); */
 
                 // Get cover filename from audio source
-                const baseFileName = audio.filename.split('.');
+                const _baseFileName = audio.filename.split('.');
 
+                // Get baseFilename
+                baseFileName = _baseFileName.slice(0, _baseFileName.length - 1).join('');
+                extension = geMediaExtensionFromMimeType(image.format, MEDIA_TYPE.IMAGE);
                 // Set cover filename
-                cover = baseFileName.slice(0, baseFileName.length - 1).join('') + '.' + getFileExtensionFromMimeType(image.format);
+                cover = baseFileName + '.' + extension;
 
                 try {
                     // Try to transform the base64 into an image file and save it
-                    fs.writeFileSync(process.env.IMAGES_STORAGE_DIR + cover, btoa(base64String), {encoding: 'base64'});
+                    const coverPath = `${process.cwd()}/${mediaConfig.audio.storage}/${audioId}/${baseSubDirConfig.pictures}/${cover}`;
+
+                    // Create the cover image
+                    fs.writeFileSync(coverPath, btoa(base64String), {encoding: 'base64'});
                 } catch (e) {
                     // Go back to default image in case of failure
-                    cover = process.env.DEFAULT_AUDIO_COVER;
+                    cover = mediaConfig.audio.cover.default.name;
                 }
             }
 
@@ -72,33 +86,56 @@ const getAudioInformation = (audio) => {
  * @param next
  */
 exports.createAudio = (req, res, next) => {
-    getAudioInformation(req.file)
-        .then(async (_data) => {
-            const audio = new Audio({
-                ..._data,
-                title: req.body.title ? req.body.title : _data.title,
-                isBookmarked: false,
-                userId: req.user.userId,
-                folderId: req.body.folderId,
-            });
+    audioMulter(req, res, function(err) {
+        // req.file contains information of uploaded file
+        // req.body contains information of text fields, if there were any
+        if (req.fileValidationError) {
+            const error = ERRORS.MEDIA.UPLOAD.WRONG_FILE_GIVEN;
+            error.message = error.message('audio');
+            return res.status(400).send(getErrors(error));
+        } else if (!req.file) {
+            return res.status(400).send(getErrors(ERRORS.MEDIA.UPLOAD.FILE_NOT_FOUND));
+        } else if (err instanceof multer.MulterError) {
+            logger.error(`MulterError while upload an audio file. ${err}`);
+            return res.status(400).send(getErrors(ERRORS.SERVER.INTERNAL_SERVER_ERROR));
+        } else if (err) {
+            logger.error(`Error while upload an audio file. ${err}`);
+            return res.status(400).send(getErrors(ERRORS.SERVER.INTERNAL_SERVER_ERROR));
+        }
 
-            try {
-                await audio.save();
-                res.status(200).json({
-                    message: "Audio successfully saved!",
-                    data: audio
+        getAudioInformation(req.file, req.audioId)
+            .then(async (_data) => {
+                const audio = new Audio({
+                    ..._data,
+                    _id: req.audioId,
+                    title: req.body.title ? req.body.title : _data.title,
+                    isBookmarked: false,
+                    userId: req.user.userId,
+                    folderId: req.body.folderId,
                 });
-            } catch (error) {
+
+                // Create hls files
+                await stream.createAudioHls(req.audioId, req.file.filename).catch(() => null);
+
+                try {
+                    await audio.save();
+                    res.status(200).json({
+                        data: audio,
+                        status: 200,
+                        message: "Audio successfully saved!",
+                    });
+                } catch (error) {
+                    res.status(400).json({
+                        error: error
+                    });
+                }
+            })
+            .catch(error => {
                 res.status(400).json({
                     error: error
                 });
-            }
-        })
-        .catch(error => {
-            res.status(400).json({
-                error: error
             });
-        });
+    });
 };
 
 exports.find = (query = {}) => Audio.find(query);

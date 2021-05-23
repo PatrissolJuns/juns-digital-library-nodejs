@@ -58,6 +58,42 @@ const ERRORS = {
             code: "folders/unknown-parent-folder",
             message: "Unknown parent folder id",
         }
+    },
+    AUDIO: {
+        INCORRECT_ID: {
+            code: "audio/incorrect-id",
+            message: "Incorrect id given",
+        },
+        NOT_FOUND: {
+            code: "audio/not-found",
+            message: "Audio could not be found",
+        },
+    },
+    VIDEO: {
+        INCORRECT_ID: {
+            code: "video/incorrect-id",
+            message: "Incorrect id given",
+        },
+        NOT_FOUND: {
+            code: "video/not-found",
+            message: "Video could not be found",
+        },
+    },
+    MEDIA: {
+        UPLOAD: {
+            FILE_NOT_FOUND: {
+                code: "media/uploads/file-not-found",
+                message: "No file found. Please upload a file",
+            },
+            WRONG_FILE_GIVEN: {
+                code: "media/uploads/wrong-file-given",
+                message: mediaType => `Only ${mediaType} files are allowed!`,
+            },
+        },
+        FILE_NOT_FOUND: {
+            code: "media/file-not-found",
+            message: "Media file could not be found",
+        },
     }
 };
 

@@ -7,9 +7,10 @@ const logger = require('morgan');
 const io = require('socket.io')();
 const express = require('express');
 const jwt = require('./utils/jwt');
-const ROUTES = require('./urls/routes');
+const {STORAGE} = require('./urls/routes');
 const bodyParser = require('body-parser');
 const initIO = require('./sockets').initIO;
+const stream = require('./media-processing/stream');
 const initMongoDb = require('./mongodb').initMongoDb;
 const errorHandler = require('./utils/error-handler');
 
@@ -24,8 +25,11 @@ app.use(cors());
 
 // Setting entry point to get static file
 // And disable authentication
-app.use(ROUTES.STORAGE_AUDIOS.ROUTE, express.static(path.join(__dirname, ROUTES.STORAGE_AUDIOS.DESTINATION)));
-app.use(ROUTES.STORAGE_IMAGES.ROUTE, express.static(path.join(__dirname, ROUTES.STORAGE_IMAGES.DESTINATION)));
+app.use(STORAGE.AUDIOS.HLS, stream.getAudioHlsContent);
+// app.use(STORAGE.VIDEOS.HLS, stream.getAudioHlsContent);
+app.use(STORAGE.AUDIOS.COVER, stream.getAudioCoverContent);
+// app.use(STORAGE.VIDEOS.COVER, stream.getVideoCoverContent);
+app.use(STORAGE.AUDIOS.RAW, stream.getRawAudioContent);
 
 // Enable jwt for authentication
 app.use(jwt());
@@ -63,5 +67,4 @@ app.use(errorHandler);
 const server = app.listen(process.env.PORT || 5201, () => console.log(`LISTENING ON PORT ${process.env.PORT}`));
 
 io.attach(server,{ transports: ["websocket"] });
-
 initIO(io);
