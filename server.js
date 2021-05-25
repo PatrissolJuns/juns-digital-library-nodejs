@@ -7,9 +7,9 @@ const logger = require('morgan');
 const io = require('socket.io')();
 const express = require('express');
 const jwt = require('./utils/jwt');
-const {STORAGE} = require('./urls/routes');
 const bodyParser = require('body-parser');
 const initIO = require('./sockets').initIO;
+const {STORAGE} = require('./urls/routes');
 const stream = require('./media-processing/stream');
 const initMongoDb = require('./mongodb').initMongoDb;
 const errorHandler = require('./utils/error-handler');
@@ -40,8 +40,9 @@ initMongoDb();
 const router = express.Router();
 
 // (optional) only made for logging and
-// bodyParser, parses the request body to be a readable json format
 app.use(logger('dev'));
+
+// bodyParser, parses the request body to be a readable json format
 // app.use(express.json());
 app.use(bodyParser.json({limit:'50mb'}));
 app.use(bodyParser.urlencoded({ extended: false, limit:'50mb', parameterLimit: 1000000 }));

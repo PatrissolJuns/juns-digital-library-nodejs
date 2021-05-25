@@ -2,6 +2,7 @@ const fs = require('fs');
 const multer = require('multer');
 const mongoose = require('mongoose');
 const {MEDIA_TYPE} = require('../constants');
+const MediaValidator = require('../validations/media');
 const {mediaConfig, baseSubDirConfig} = require('../config');
 const {geMediaExtensionFromMimeType} = require('../helpers');
 
@@ -58,7 +59,14 @@ const audioStorage = multer.diskStorage({
  * @returns {*}
  */
 const audioFilter = function(req, file, cb) {
-    // Accept audio only
+    // First validate fields
+    const validation = MediaValidator.validateMediaUpload(req.body);
+    if (!validation.isCorrect) {
+        req.fieldValidationError = {status: 400, errors: validation.errors};
+        return cb(new Error("Fields error"), false);
+    }
+
+    // Then accept audio file only
     if (!file.originalname.match(mediaConfig.audio.extensions.acceptedRegex)) {
         req.fileValidationError = 'Only audio files are allowed!';
         return cb(new Error('Only audio files are allowed!'), false);

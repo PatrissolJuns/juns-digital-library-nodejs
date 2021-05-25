@@ -89,6 +89,10 @@ const ERRORS = {
                 code: "media/uploads/wrong-file-given",
                 message: mediaType => `Only ${mediaType} files are allowed!`,
             },
+            UNPROCESSABLE_FILE: {
+                code: "media/uploads/unprocessable-file",
+                message: mediaType => `The ${mediaType} could not be processed`,
+            },
         },
         FILE_NOT_FOUND: {
             code: "media/file-not-found",

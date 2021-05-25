@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const {ERRORS} = require('../utils/errors');
 const {MEDIA_TYPE, EXTENSIONS_FULL_LIST} = require('../constants');
 
@@ -125,12 +126,23 @@ const error500 = (res) => {
     return res.status(500).json({status: 500, errors: [ERRORS.SERVER.INTERNAL_SERVER_ERROR]});
 };
 
+/**
+ * Strongly check whether an id is valid or not
+ * @param id
+ * @returns {boolean}
+ */
+const isValidObjectId = id => {
+    const ObjectId = mongoose.Types.ObjectId;
+    return ObjectId.isValid(id) && mongoose.isValidObjectId(id);
+};
+
 module.exports = {
     forAsync,
     error500,
     getErrors,
     getSuccess,
     generateId,
+    isValidObjectId,
     getFileNameInfo,
     geMediaExtensionFromMimeType,
     getFileExtensionFromMimeType,

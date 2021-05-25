@@ -5,12 +5,12 @@ const mm = require('music-metadata');
 const Audio = require('../models/Audio');
 const {ERRORS} = require('../utils/errors');
 const logger = require('./../config/logger');
-const {mediaConfig, baseSubDirConfig} = require('../config');
 const {MEDIA_TYPE} = require('../constants');
-const PlaylistController = require('../controllers/playlist');
-const { getErrors, geMediaExtensionFromMimeType } = require('../helpers');
 const stream = require('../media-processing/stream');
+const {mediaConfig, baseSubDirConfig} = require('../config');
+const PlaylistController = require('../controllers/playlist');
 const {audioMulter} = require('../media-processing/multerConfig');
+const { getErrors, getSuccess, geMediaExtensionFromMimeType } = require('../helpers');
 
 
 /**
@@ -28,7 +28,7 @@ const getAudioInformation = (audio, audioId) => {
             const image = mm.selectCover(metadata.common.picture);
 
             // Initialize default cover art
-            let cover = process.env.DEFAULT_AUDIO_COVER, base64String = "", baseFileName = '', extension = '';
+            let cover = mediaConfig.audio.cover.default.name, base64String = "", baseFileName = '', extension = '';
 
             // Try to save cover art
             if (image) {
@@ -89,20 +89,28 @@ exports.createAudio = (req, res, next) => {
     audioMulter(req, res, function(err) {
         // req.file contains information of uploaded file
         // req.body contains information of text fields, if there were any
-        if (req.fileValidationError) {
+        // Perform some validations
+        if (req.fieldValidationError) {
+            return res.status(400).json(req.fieldValidationError);
+        } else if (req.fileValidationError) {
             const error = ERRORS.MEDIA.UPLOAD.WRONG_FILE_GIVEN;
             error.message = error.message('audio');
-            return res.status(400).send(getErrors(error));
+            return res.status(400).json(getErrors(error));
         } else if (!req.file) {
-            return res.status(400).send(getErrors(ERRORS.MEDIA.UPLOAD.FILE_NOT_FOUND));
+            return res.status(400).json(getErrors(ERRORS.MEDIA.UPLOAD.FILE_NOT_FOUND));
         } else if (err instanceof multer.MulterError) {
             logger.error(`MulterError while upload an audio file. ${err}`);
-            return res.status(400).send(getErrors(ERRORS.SERVER.INTERNAL_SERVER_ERROR));
+            const error = ERRORS.MEDIA.UPLOAD.UNPROCESSABLE_FILE;
+            error.message = error.message('audio');
+            return res.status(400).json(getErrors(error));
         } else if (err) {
             logger.error(`Error while upload an audio file. ${err}`);
-            return res.status(400).send(getErrors(ERRORS.SERVER.INTERNAL_SERVER_ERROR));
+            const error = ERRORS.MEDIA.UPLOAD.UNPROCESSABLE_FILE;
+            error.message = error.message('audio');
+            return res.status(400).json(getErrors(error));
         }
 
+        // Process audio file to get its details
         getAudioInformation(req.file, req.audioId)
             .then(async (_data) => {
                 const audio = new Audio({
@@ -118,22 +126,18 @@ exports.createAudio = (req, res, next) => {
                 await stream.createAudioHls(req.audioId, req.file.filename).catch(() => null);
 
                 try {
+                    // Persist the audio
                     await audio.save();
-                    res.status(200).json({
-                        data: audio,
-                        status: 200,
-                        message: "Audio successfully saved!",
-                    });
+                    // Terminate the request
+                    return res.status(200).json(getSuccess(audio,  "Audio successfully saved!"));
                 } catch (error) {
-                    res.status(400).json({
-                        error: error
-                    });
+                    logger.error(`Error while saving an audio file. ${error}`);
+                    return res.status(400).json(getErrors(ERRORS.SERVER.INTERNAL_SERVER_ERROR));
                 }
             })
             .catch(error => {
-                res.status(400).json({
-                    error: error
-                });
+                logger.error(`Error while getting information about audio file while uploading. ${error}`);
+                res.status(400).json(getErrors(ERRORS.SERVER.INTERNAL_SERVER_ERROR));
             });
     });
 };

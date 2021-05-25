@@ -29,8 +29,8 @@ const createAudioHls = async (audioId, fileName) => {
                 logger.error(`Error while creating a HLS for the audioId ${audioId}. Below is stacktrace: ${error}`);
                 return;
             }
-            console.log(`stdout: ${stdout}`);
-            console.error(`stderr: ${stderr}`);
+            // console.log(`stdout: ${stdout}`);
+            // console.error(`stderr: ${stderr}`);
         }
     );
 };
@@ -101,7 +101,7 @@ const getAudioHlsContent = (req, res) => {
 
     if (!audioId || !audioChunkName) {
         logger.error(`Incorrect parameter given while getting hls content: videoId : ${audioId} videoChunkName : ${audioChunkName} - ${req.originalUrl} - ${req.method} - ${req.ip}`);
-        return res.status(400).send("Incorrect parameters");
+        return res.status(400).json("Incorrect parameters");
     }
 
     // Absolute file path
@@ -111,7 +111,7 @@ const getAudioHlsContent = (req, res) => {
     res.download(file, err => {
         if (err) {
             logger.error(`The audio hls files of id ${audioId} could not be found: The error: ${err}`);
-            return res.status(400).send(getErrors(ERRORS.MEDIA.FILE_NOT_FOUND));
+            return res.status(400).json(getErrors(ERRORS.MEDIA.FILE_NOT_FOUND));
         }
     });
 };
@@ -127,7 +127,7 @@ const getVideoHlsContent = (req, res) => {
     const videoId = req.params.videoId, videoChunkName = req.params.videoChunkName;
 
     if (!videoId || !videoChunkName) {
-        return res.status(400).send(getErrors(ERRORS.VIDEO.INCORRECT_ID));
+        return res.status(400).json(getErrors(ERRORS.VIDEO.INCORRECT_ID));
     }
 
     // Absolute file path
@@ -137,7 +137,7 @@ const getVideoHlsContent = (req, res) => {
     res.download(file, err => {
         if (err) {
             logger.error(`The video hls files of id ${videoId} could not be found: The error: ${err}`);
-            return res.status(400).send(getErrors(ERRORS.MEDIA.FILE_NOT_FOUND));
+            return res.status(400).json(getErrors(ERRORS.MEDIA.FILE_NOT_FOUND));
         }
     });
 };
@@ -154,7 +154,7 @@ const getRawAudioContent = async (req, res) => {
 
     // First check if the id is a valid one
     if (!mongoose.isValidObjectId(audioId)) {
-        return res.status(400).send(getErrors(ERRORS.AUDIO.INCORRECT_ID));
+        return res.status(400).json(getErrors(ERRORS.AUDIO.INCORRECT_ID));
     }
 
     try {
@@ -165,11 +165,11 @@ const getRawAudioContent = async (req, res) => {
         res.download(file, `${audio.title}`, err => {
             if (err) {
                 logger.error(`The audio file of id ${audioId} could not be found: The error: ${err}`);
-                return res.status(400).send(getErrors(ERRORS.MEDIA.FILE_NOT_FOUND));
+                return res.status(400).json(getErrors(ERRORS.MEDIA.FILE_NOT_FOUND));
             }
         });
     } catch (e) {
-        return res.status(400).send(getErrors(ERRORS.AUDIO.NOT_FOUND));
+        return res.status(400).json(getErrors(ERRORS.AUDIO.NOT_FOUND));
     }
 };
 
@@ -185,7 +185,7 @@ const getRawVideoContent = async (req, res) => {
 
     // First check if the id is a valid one
     if (!mongoose.isValidObjectId(videoId)) {
-        return res.status(400).send(getErrors(ERRORS.VIDEO.INCORRECT_ID));
+        return res.status(400).json(getErrors(ERRORS.VIDEO.INCORRECT_ID));
     }
 
     try {
@@ -196,11 +196,11 @@ const getRawVideoContent = async (req, res) => {
         res.download(file, `${video.title}`, err => {
             if (err) {
                 logger.error(`The video file of id ${videoId} could not be found: The error: ${err}`);
-                return res.status(400).send(getErrors(ERRORS.MEDIA.FILE_NOT_FOUND));
+                return res.status(400).json(getErrors(ERRORS.MEDIA.FILE_NOT_FOUND));
             }
         });
     } catch (e) {
-        return res.status(400).send(getErrors(ERRORS.VIDEO.NOT_FOUND));
+        return res.status(400).json(getErrors(ERRORS.VIDEO.NOT_FOUND));
     }
 };
 
@@ -215,7 +215,7 @@ const getAudioCoverContent = async (req, res) => {
 
     // First check if the id is a valid one
     if (!mongoose.isValidObjectId(audioId)) {
-        return res.status(400).send(getErrors(ERRORS.AUDIO.INCORRECT_ID));
+        return res.status(400).json(getErrors(ERRORS.AUDIO.INCORRECT_ID));
     }
 
     try {
@@ -236,11 +236,11 @@ const getAudioCoverContent = async (req, res) => {
         return res.download(file, `${audio._title.base}.${audio._cover.ext}`, err => {
             if (err) {
                 logger.error(`The image file for the audio of id ${audioId} could not be found: The error: ${err}`);
-                return res.status(400).send(getErrors(ERRORS.MEDIA.NOT_FOUND));
+                return res.status(400).json(getErrors(ERRORS.MEDIA.NOT_FOUND));
             }
         });
     } catch (e) {
-        return res.status(400).send(getErrors(ERRORS.AUDIO.NOT_FOUND));
+        return res.status(400).json(getErrors(ERRORS.AUDIO.NOT_FOUND));
     }
 };
 
@@ -257,7 +257,7 @@ const getVideoCoverContent = async (req, res) => {
 
     // First check if the id is a valid one
     if (!mongoose.isValidObjectId(videoId)) {
-        return res.status(400).send(getErrors(ERRORS.VIDEO.INCORRECT_ID));
+        return res.status(400).json(getErrors(ERRORS.VIDEO.INCORRECT_ID));
     }
 
     try {
@@ -278,11 +278,11 @@ const getVideoCoverContent = async (req, res) => {
         return res.download(file, `${video._title.base}.${video._cover.ext}`, err => {
             if (err) {
                 logger.error(`The image file for the video of id ${videoId} could not be found: The error: ${err}`);
-                return res.status(400).send(getErrors(ERRORS.MEDIA.NOT_FOUND));
+                return res.status(400).json(getErrors(ERRORS.MEDIA.NOT_FOUND));
             }
         });
     } catch (e) {
-        return res.status(400).send(getErrors(ERRORS.AUDIO.NOT_FOUND));
+        return res.status(400).json(getErrors(ERRORS.AUDIO.NOT_FOUND));
     }
 };
 
