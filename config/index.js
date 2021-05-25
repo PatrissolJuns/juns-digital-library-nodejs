@@ -37,7 +37,7 @@ const mediaConfig = {
         },
         extensions: {
             // This is obtained from Object.entries(EXTENSIONS_FULL_LIST).filter(e=> e[1].some(e => /audio/.test(e))).map(e => e[0]).join('|')
-            acceptedRegex: /\.(au|ac3|flac|ogg|m4a|aac|wav|mp3|mid|aif|ram|rpm|ra|wma)$/,
+            acceptedRegex: /\.(au|ac3|flac|ogg|m4a|aac|wav|mp3|mid|aif|ram|rpm|ra|wma)$/ig,
         }
     },
     video: {
@@ -63,7 +63,7 @@ const mediaConfig = {
         },
         extensions: {
             // This is obtained from Object.entries(EXTENSIONS_FULL_LIST).filter(e=> e[1].some(e => /video/.test(e))).map(e => e[0]).join('|')
-            acceptedRegex: /\.(vlc|wmv|ogg|3g2|3gp|mp4|f4v|flv|webm|mpeg|mov|avi|movie|rv|jp2)$/,
+            acceptedRegex: /\.(vlc|wmv|ogg|3g2|3gp|mp4|f4v|flv|webm|mpeg|mov|avi|movie|rv|jp2)$/ig,
         }
     },
 };
