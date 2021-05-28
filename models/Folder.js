@@ -18,10 +18,13 @@ const FolderSchema = new mongoose.Schema({
 }, { versionKey: false });
 
 FolderSchema.pre('save', function(next) {
-    this.createdAt = Date.now();
-    this.updatedAt = Date.now();
+    this.createdAt = new Date();
+    this.updatedAt = new Date();
     next();
 });
+
+FolderSchema.pre('updateOne', function() {this.set({ updatedAt: new Date() });});
+FolderSchema.pre('findByIdAndUpdate', function() {this.set({ updatedAt: new Date() });});
 
 FolderSchema.set('toJSON', {
     transform: function(doc, ret, options) {

@@ -1,4 +1,3 @@
-
 const fs = require('fs');
 const mongoose = require('mongoose');
 const {getErrors} = require('../helpers');
@@ -66,11 +65,11 @@ exports.getFolderContent = async (socket, outputEvent, data) => {
         }
     }
 
-    // Get the proper content
+    // Get the content properly
     try {
         let [folders, audios] = await Promise.all([
             Folder.find({parentFolderId: data.folderId, userId: socket.handshake.user._id}),
-            AudioController.find({folder: data.folderId, userId: socket.handshake.user._id})
+            AudioController.find({folderId: data.folderId, userId: socket.handshake.user._id})
         ]);
         socket.emit(outputEvent, {status: true, data: {
             folders,
@@ -147,12 +146,12 @@ exports.createFolder = async (socket, outputEvent, data) => {
 };
 
 /**
- * Rename a folder
+ * Update a folder
  * @param socket
  * @param outputEvent
  * @param data
  */
-exports.rename = (socket, outputEvent, data) => {
+exports.update = (socket, outputEvent, data) => {
     if (!data.name) {
         return socket.emit(outputEvent, {
             outputEvent,
@@ -161,13 +160,18 @@ exports.rename = (socket, outputEvent, data) => {
         });
     }
 
+    const dataToUpdate = {name: data.name, updatedAt: new Date()};
+    if (data.description) {
+        dataToUpdate.description = data.description;
+    }
+
     Folder
-        .findByIdAndUpdate(data.id, {name: data.name})
+        .findByIdAndUpdate(data.id, dataToUpdate, {new: true})
         .then(folder => {
             socket.emit(outputEvent, {status: true, data: folder});
         })
         .catch(error => {
-            logger.error("Error while renaming a folder " + JSON.stringify(data) + ". The error: " + error);
+            logger.error("Error while updating a folder " + JSON.stringify(data) + ". The error: " + error);
             socket.emit(outputEvent, {
                 outputEvent,
                 status: false,

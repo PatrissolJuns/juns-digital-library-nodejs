@@ -9,9 +9,9 @@ const FOLDERS = {
         INPUT: 'folders:create:input',
         OUTPUT: 'folders:create:output',
     },
-    RENAME: {
-        INPUT: 'folders:one:rename:input',
-        OUTPUT: 'folders:one:rename:output',
+    UPDATE: {
+        INPUT: 'folders:one:update:input',
+        OUTPUT: 'folders:one:update:output',
     },
     DETAILS: {
         INPUT: 'folders:one:details:input',
