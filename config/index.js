@@ -13,6 +13,11 @@ const mediaConfig = {
     media: {
         baseDir: process.env.STORAGE_DIR,
         baseUrl: process.env.STATIC_BASE_URL,
+        type: {
+            audio: process.env.MEDIA_TYPE_AUDIO,
+            video: process.env.MEDIA_TYPE_VIDEO,
+        },
+        types: [process.env.MEDIA_TYPE_AUDIO, process.env.MEDIA_TYPE_VIDEO],
     },
     audio: {
         storage: process.env.AUDIOS_STORAGE_DIR,
@@ -66,6 +71,18 @@ const mediaConfig = {
             acceptedRegex: /\.(vlc|wmv|ogg|3g2|3gp|mp4|f4v|flv|webm|mpeg|mov|avi|movie|rv|jp2)$/ig,
         }
     },
+    playlist: {
+        cover: {
+            url: process.env.COVER_PICTURE_PLAYLIST_URL,
+            name: process.env.COVER_PICTURE_PLAYLIST_NAME,
+            default: {
+                path: process.env.DEFAULT_PLAYLIST_COVER_PATH,
+                name: process.env.DEFAULT_PLAYLIST_COVER_NAME,
+                base: process.env.DEFAULT_PLAYLIST_COVER_BASE,
+                extension: process.env.DEFAULT_PLAYLIST_COVER_EXTENSION,
+            },
+        },
+    }
 };
 
 module.exports = {
