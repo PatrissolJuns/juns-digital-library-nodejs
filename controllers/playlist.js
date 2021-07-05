@@ -1,4 +1,10 @@
+const logger = require('../config/logger');
+const {ERRORS} = require('../utils/errors');
+const {mediaConfig} = require('../config');
 const Playlist = require('../models/Playlist');
+const PlaylistValidator = require('../validations/playlist');
+const {NotFoundModelWithId} = require('../utils/error-handler');
+const {getErrors, isValidObjectId, getOneOfModel} = require('../helpers');
 
 /**
  * Get all playlists
@@ -8,12 +14,17 @@ const Playlist = require('../models/Playlist');
  */
 exports.getAll = (socket, outputEvent, data) => {
     Playlist
-        .find({})
+        .find({userId: socket.handshake.user._id})
         .then(playlists => {
             socket.emit(outputEvent, {status: true, data: playlists});
         })
         .catch(error => {
-            socket.emit(outputEvent, {status: false, error: error, message: "Error while getting all playlists"});
+            logger.error("Error while getting all playlists. The error: " + error);
+            socket.emit(outputEvent, {
+                outputEvent,
+                status: false,
+                errors: getErrors(ERRORS.SERVER.INTERNAL_SERVER_ERROR).errors,
+            });
         });
 };
 
@@ -24,41 +35,28 @@ exports.getAll = (socket, outputEvent, data) => {
  * @param data
  */
 exports.getOne = (socket, outputEvent, data) => {
-    if (!data.id) {
-        socket.emit(outputEvent, {status: false, error: "INVALID_ID", message: "Invalid id given"});
-    }
-
-    Playlist
-        .findById(data.id)
-        .then(async playlist => {
-            const content = await getPlaylistContent(playlist);
-            if (content) {
-                socket.emit(outputEvent, {status: true, data: {...playlist, content}});
-            } else socket.emit(outputEvent, {status: false, error: error, message: "Error while getting content of playlist"});
-        })
-        .catch(error => {
-            socket.emit(outputEvent, {status: false, error: error, message: "Error while getting a playlist"});
+    if (!isValidObjectId(data.id)) {
+        return socket.emit(outputEvent, {
+            outputEvent,
+            status: false,
+            errors: getErrors(ERRORS.PLAYLISTS.UNKNOWN_PLAYLIST).errors,
         });
-};
-
-/**
- * Rename a playlist
- * @param socket
- * @param outputEvent
- * @param data
- */
-exports.rename = (socket, outputEvent, data) => {
-    if (!data.name) {
-        socket.emit(outputEvent, {status: false, error: "INVALID_NAME", message: "Invalid name given"});
     }
 
-    Playlist
-        .findByIdAndUpdate(data.id, {name: data.name})
-        .then(playlist => {
-            socket.emit(outputEvent, {status: true, data: playlist});
+    getOneOfModel(Playlist, data.id)
+        .then(async playlist => {
+            try {
+                const content = await getPlaylistContent(playlist);
+                socket.emit(outputEvent, {status: true, data: {...playlist, content}});
+            } catch (e) { throw e; }
         })
         .catch(error => {
-            socket.emit(outputEvent, {status: false, error: error, message: "Error while renaming a playlist"});
+            logger.error("Error while getting playlist content of id" + id + ". The error: " + error);
+            socket.emit(outputEvent, {
+                outputEvent,
+                status: false,
+                errors: getErrors(ERRORS.SERVER.INTERNAL_SERVER_ERROR).errors,
+            });
         });
 };
 
@@ -69,52 +67,139 @@ exports.rename = (socket, outputEvent, data) => {
  * @param data
  */
 exports.create = (socket, outputEvent, data) => {
-    if (!data.name) {
-        socket.emit(outputEvent, {status: false, error: "INVALID_NAME", message: "Invalid name given"});
+    // validate
+    const validation = PlaylistValidator.validateCreate(data);
+    if (!validation.isCorrect) {
+        return socket.emit(outputEvent, {
+            outputEvent,
+            status: false,
+            errors: validation.errors,
+        });
     }
 
     const playlist = new Playlist({
         name: data.name,
         content: data.content || [],
     });
+
     playlist
         .save()
         .then(playlist => {
             socket.emit(outputEvent, {status: true, data: playlist});
         })
         .catch(error => {
-            socket.emit(outputEvent, {status: false, error: error, message: "Error while creating a playlist"});
+            logger.error("Error while creating playlist with data " + JSON.stringify(data) + ". The error: " + error);
+            socket.emit(outputEvent, {
+                outputEvent,
+                status: false,
+                errors: getErrors(ERRORS.SERVER.INTERNAL_SERVER_ERROR).errors,
+            });
         });
 };
+
+/**
+ * Update a playlist. This doest not include content property
+ * @param socket
+ * @param outputEvent
+ * @param data Object(id: String, name?: String)
+ */
+exports.update = async (socket, outputEvent, data) => {
+    // validate
+    const validation = PlaylistValidator.validateUpdate(data);
+    if (!validation.isCorrect) {
+        return socket.emit(outputEvent, {
+            outputEvent,
+            status: false,
+            errors: validation.errors,
+        });
+    }
+
+    try {
+        const playlist = await getOneOfModel(Playlist, data.id);
+        playlist.name = name;
+
+        // Update playlist
+        playlist
+            .save()
+            .then(playlist => {
+                socket.emit(outputEvent, {status: true, data: playlist});
+            })
+            .catch(error => {
+                logger.error("Error while updating a playlist " + JSON.stringify(playlist) + ". The error: " + error);
+                socket.emit(outputEvent, {
+                    outputEvent,
+                    status: false,
+                    errors: getErrors(ERRORS.SERVER.INTERNAL_SERVER_ERROR).errors,
+                });
+            });
+    } catch (e) {
+        if (error instanceof NotFoundModelWithId) {
+            return socket.emit(outputEvent, {
+                outputEvent,
+                status: false,
+                errors: getErrors(ERRORS.PLAYLISTS.UNKNOWN_PLAYLIST).errors,
+            });
+        }
+
+        socket.emit(outputEvent, {
+            outputEvent,
+            status: false,
+            errors: getErrors(ERRORS.SERVER.INTERNAL_SERVER_ERROR).errors,
+        });
+    }
+};
+
 
 /**
  * Add items to a playlist
  * @param socket
  * @param outputEvent
- * @param data
+ * @param data Object(id: String, items: Array({id, type}))
  * @returns {Promise<void>}
  */
 exports.addItems = async (socket, outputEvent, data) => {
-    if (!data.items || !Array.isArray(data.items)) {
-        socket.emit(outputEvent, {status: false, error: "INVALID_ITEMS", message: "Invalid items given"});
+    // validate
+    const validation = await PlaylistValidator.validateIdAndItems(data);
+    if (!validation.isCorrect) {
+        return socket.emit(outputEvent, {
+            outputEvent,
+            status: false,
+            errors: validation.errors,
+        });
     }
 
-    if (data.items.length === 0) {
-        socket.emit(outputEvent, {status: false, error: "EMPTY_ITEMS", message: "Empty items given"});
-    }
+    try {
+        const playlist = await getOneOfModel(Playlist, data.id);
+        playlist.content = [...playlist.content, ...data.items];
 
-    const playlist = await this.getFromDBOnePlaylist(data.id);
-    if (playlist) {
+        // Update playlist
         playlist
-            .update({content: [...new Set([...playlist.content, ...data.items])]})
+            .save()
             .then(playlist => {
                 socket.emit(outputEvent, {status: true, data: playlist});
             })
             .catch(error => {
-                socket.emit(outputEvent, {status: false, error: error, message: "Error while adding items into a playlist"});
+                logger.error("Error while adding items into a playlist " + JSON.stringify(playlist) + ". The error: " + error);
+                socket.emit(outputEvent, {
+                    outputEvent,
+                    status: false,
+                    errors: getErrors(ERRORS.SERVER.INTERNAL_SERVER_ERROR).errors,
+                });
             });
-    } else {
-        socket.emit(outputEvent, {status: false, error: "INVALID_PLAYLIST_SELECTED", message: "Error while adding items into a playlist"});
+    } catch (error) {
+        if (error instanceof NotFoundModelWithId) {
+            return socket.emit(outputEvent, {
+                outputEvent,
+                status: false,
+                errors: getErrors(ERRORS.PLAYLISTS.UNKNOWN_PLAYLIST).errors,
+            });
+        }
+
+        socket.emit(outputEvent, {
+            outputEvent,
+            status: false,
+            errors: getErrors(ERRORS.SERVER.INTERNAL_SERVER_ERROR).errors,
+        });
     }
 };
 
@@ -122,38 +207,60 @@ exports.addItems = async (socket, outputEvent, data) => {
  * Remove some elements from a playlist
  * @param socket
  * @param outputEvent
- * @param data
+ * @param data Object(id: String, items: Array({id, type}), all: Boolean)
  * @returns {Promise<void>}
  */
 exports.removeContent = async (socket, outputEvent, data) => {
-    if (!data.items || !Array.isArray(data.items)) {
-        socket.emit(outputEvent, {status: false, error: "INVALID_ITEMS", message: "Invalid items given"});
+    // validate
+    const validation = await PlaylistValidator.validateIdAndItems(data);
+    if (!validation.isCorrect) {
+        return socket.emit(outputEvent, {
+            outputEvent,
+            status: false,
+            errors: validation.errors,
+        });
     }
 
-    if (data.items.length === 0) {
-        socket.emit(outputEvent, {status: false, error: "EMPTY_ITEMS", message: "Empty items given"});
-    }
+    try {
+        const playlist = await getOneOfModel(Playlist, data.id);
 
-    const playlist = await this.getFromDBOnePlaylist(data.id);
-    if (playlist) {
+        // Remove all ?
+        if (data.all) {
+            playlist.content = [];
+        } else {
+            const itemsId = data.items.map(i => i.id);
+            playlist.content = playlist.content.filter(item => !itemsId.includes(item.id));
+        }
+
+        // Update playlist
         playlist
-            .update({content: playlist.content.filter(audio => !data.items.includes(audio))})
+            .save()
             .then(playlist => {
                 socket.emit(outputEvent, {status: true, data: playlist});
             })
             .catch(error => {
-                socket.emit(outputEvent, {status: false, error: error, message: "Error while adding items into a playlist"});
+                logger.error("Error while removing items into a playlist " + JSON.stringify(playlist) + ". The error: " + error);
+                socket.emit(outputEvent, {
+                    outputEvent,
+                    status: false,
+                    errors: getErrors(ERRORS.SERVER.INTERNAL_SERVER_ERROR).errors,
+                });
             });
-    } else {
-        socket.emit(outputEvent, {status: false, error: "INVALID_PLAYLIST_SELECTED", message: "Error while adding items into a playlist"});
-    }
-};
+    } catch (error) {
+        if (error instanceof NotFoundModelWithId) {
+            return socket.emit(outputEvent, {
+                outputEvent,
+                status: false,
+                errors: getErrors(ERRORS.PLAYLISTS.UNKNOWN_PLAYLIST).errors,
+            });
+        }
 
-exports.getFromDBOnePlaylist = (_id) => {
-    return Playlist
-        .findById(_id)
-        .then(playlist => playlist)
-        .catch(error => null);
+        socket.emit(outputEvent, {
+            outputEvent,
+            status: false,
+            errors: getErrors(ERRORS.SERVER.INTERNAL_SERVER_ERROR).errors,
+        });
+    }
 };
 
 /**
@@ -170,8 +277,8 @@ exports.getPlaylistContent = (playlist) => {
                 audios.push({item: item, index})
             } else videos.push({item: item, index})
         });*/
-        const audioIds = playlist.content.filter(item => item.type === process.env.MEDIA_TYPE_AUDIO).map(item => item.id),
-              videoIds = playlist.content.filter(item => item.type === process.env.MEDIA_TYPE_VIDEO).map(item => item.id);
+        const audioIds = playlist.content.filter(item => item.type === mediaConfig.media.type.audio).map(item => item.id),
+              videoIds = playlist.content.filter(item => item.type === mediaConfig.media.type.video).map(item => item.id);
 
         Promise
             .all([
@@ -180,7 +287,7 @@ exports.getPlaylistContent = (playlist) => {
                 // Video.find({_id : { $in : videoIds } }),
             ])
             .then(values => {
-                const result = [], audiosResult = values[0], videoResult = values[1];
+                const result = [], audiosResult = values[0], videoResult = []; // values[1];
 
                 // Map content data to gets the real value
                 playlist.content.forEach((item, index) => {
@@ -191,6 +298,7 @@ exports.getPlaylistContent = (playlist) => {
                 resolve(result);
             })
             .catch(error => {
+                logger.error("Error while getting playlist content of " + JSON.stringify(playlist) + ". The error: " + error);
                 reject(null);
             });
     })

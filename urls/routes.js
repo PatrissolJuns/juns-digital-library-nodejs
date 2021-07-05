@@ -42,11 +42,10 @@ const PLAYLISTS = {
         INPUT: 'playlists:create:input',
         OUTPUT: 'playlists:create:output',
     },
-    RENAME: {
-        INPUT: 'playlists:one:rename:input',
-        OUTPUT: 'playlists:one:rename:output',
+    UPDATE: {
+        INPUT: 'playlists:one:update:input',
+        OUTPUT: 'playlists:one:update:output',
     },
-
 };
 
 const AUDIOS = {

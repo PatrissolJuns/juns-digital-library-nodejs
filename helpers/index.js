@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const {ERRORS} = require('../utils/errors');
+const {NotFoundModelWithId} = require('../utils/error-handler');
 const {MEDIA_TYPE, EXTENSIONS_FULL_LIST} = require('../constants');
 
 /**
@@ -132,8 +133,26 @@ const error500 = (res) => {
  * @returns {boolean}
  */
 const isValidObjectId = id => {
-    const ObjectId = mongoose.Types.ObjectId;
-    return ObjectId.isValid(id) && mongoose.isValidObjectId(id);
+    return mongoose.Types.ObjectId.isValid(id) && mongoose.isValidObjectId(id);
+};
+
+/**
+ * Get one items of Model by id
+ * @param Model
+ * @param id
+ * @returns {Promise<any>}
+ */
+const getOneOfModel = (Model, id) => {
+    return new Promise((resolve, reject) => {
+        Model
+            .findById(id)
+            .then(entity => {
+                if (entity) {
+                    resolve(entity);
+                } else reject(new NotFoundModelWithId("Entity with id not found"));
+            })
+            .catch(error => reject(error));
+    })
 };
 
 module.exports = {
@@ -142,6 +161,7 @@ module.exports = {
     getErrors,
     getSuccess,
     generateId,
+    getOneOfModel,
     isValidObjectId,
     getFileNameInfo,
     geMediaExtensionFromMimeType,

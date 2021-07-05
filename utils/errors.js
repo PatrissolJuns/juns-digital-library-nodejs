@@ -98,7 +98,25 @@ const ERRORS = {
             code: "media/file-not-found",
             message: "Media file could not be found",
         },
-    }
+    },
+    PLAYLISTS: {
+        UNKNOWN_PLAYLIST: {
+            code: "playlist/unknown-playlist",
+            message: "Unknown playlist id",
+        },
+        INVALID_ITEMS_STRUCTURE: {
+            code: "playlist/invalid-items-structure",
+            message: "The structure of given items were invalid",
+        },
+        INVALID_ITEMS: {
+            code: "playlist/invalid-items",
+            message: "Given items were invalid",
+        },
+        EMPTY_ITEMS: {
+            code: "playlist/empty-items",
+            message: "Given items were empty",
+        }
+    },
 };
 
 // Mongo db error code

@@ -12,7 +12,7 @@ const initIO = require('./sockets').initIO;
 const {STORAGE} = require('./urls/routes');
 const stream = require('./media-processing/stream');
 const initMongoDb = require('./mongodb').initMongoDb;
-const errorHandler = require('./utils/error-handler');
+const {errorHandler} = require('./utils/error-handler');
 
 const app = express();
 

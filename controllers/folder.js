@@ -1,9 +1,9 @@
 const fs = require('fs');
-const mongoose = require('mongoose');
 const {getErrors} = require('../helpers');
 const Folder = require('../models/Folder');
 const logger = require('../config/logger');
 const {ERRORS} = require('../utils/errors');
+const {isValidObjectId} = require('../helpers');
 const AudioController = require('../controllers/audio');
 const {getAbsolutePath, getFolderSize, getFolderNumberStats} = require('../helpers/fs');
 
@@ -15,7 +15,7 @@ const {getAbsolutePath, getFolderSize, getFolderNumberStats} = require('../helpe
  */
 const checkFolder = async (folderId, isParent = false) => {
     // First check if the id is a valid one
-    if (!mongoose.isValidObjectId(folderId)) {
+    if (!isValidObjectId(folderId)) {
         return {
             status: false,
             errors: getErrors(ERRORS.FOLDERS[!isParent ? 'UNKNOWN_FOLDER' : 'UNKNOWN_PARENT_FOLDER']).errors,

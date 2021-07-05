@@ -1,25 +1,29 @@
+const {mediaConfig} = require('../config');
+const {getFileNameInfo} = require("../helpers");
+
 const mongoose = require('mongoose');
 
 const PlaylistContentSchema = new mongoose.Schema({
     type: {
         type: String,
         required: true,
-        enum: ['Audio', 'Video']
+        enum: mediaConfig.media.types
     },
     id: {
         required: true,
+        refPath: 'type',
         type: mongoose.Types.ObjectId,
-        refPath: 'type'
     }
 });
 
 const PlaylistSchema = new mongoose.Schema({
     name: String,
+    cover: String,
     content: [PlaylistContentSchema],
     userId: {
         ref: 'User',
+        type: mongoose.Types.ObjectId,
         required: [true, "The userId field is required"],
-        type: mongoose.Types.ObjectId
     },
     createdAt: String | Number,
     updatedAt: String | Number,
@@ -30,6 +34,15 @@ PlaylistSchema.pre('save', function(next) {
     this.createdAt = Date.now();
     this.updatedAt = Date.now();
     next();
+});
+
+PlaylistSchema.set('toJSON', {
+    transform: function(doc, ret, options) {
+        const result = {id: ret._id, ...ret};
+        delete result._id;
+        result._cover = getFileNameInfo(result.cover);
+        return result;
+    }
 });
 
 mongoose.model('Playlist', PlaylistSchema);

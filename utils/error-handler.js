@@ -1,5 +1,3 @@
-module.exports = errorHandler;
-
 function errorHandler(err, req, res, next) {
     if (typeof (err) === 'string') {
         // custom application error
@@ -19,3 +17,15 @@ function errorHandler(err, req, res, next) {
     // default to 500 server error
     return res.status(500).json({ message: err.message });
 }
+
+function NotFoundModelWithId(message) {
+    this.name = 'NotFoundModelWithId';
+    this.message = message;
+    this.stack = (new Error()).stack;
+}
+NotFoundModelWithId.prototype = new Error;
+
+module.exports = {
+    errorHandler,
+    NotFoundModelWithId
+};
