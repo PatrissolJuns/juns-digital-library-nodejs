@@ -28,6 +28,10 @@ const PLAYLISTS = {
         INPUT: 'playlists:all:get:input',
         OUTPUT: 'playlists:all:get:output',
     },
+    GET_ONE: {
+        INPUT: 'playlists:one:get:input',
+        OUTPUT: 'playlists:one:get:output',
+    },
     ITEMS: {
         ADD: {
             INPUT: 'playlists:items:add:input',
@@ -86,6 +90,9 @@ const STORAGE = {
         HLS: mediaConfig.video.hls.url,
         RAW: mediaConfig.video.raw.url,
         COVER: mediaConfig.video.cover.url,
+    },
+    PLAYLISTS: {
+        COVER: mediaConfig.playlist.cover.url,
     },
 };
 

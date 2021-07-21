@@ -19,6 +19,7 @@ const PlaylistContentSchema = new mongoose.Schema({
 const PlaylistSchema = new mongoose.Schema({
     name: String,
     cover: String,
+    description: String,
     content: [PlaylistContentSchema],
     userId: {
         ref: 'User',

@@ -140,15 +140,16 @@ const isValidObjectId = id => {
  * Get one items of Model by id
  * @param Model
  * @param id
+ * @param jsonify
  * @returns {Promise<any>}
  */
-const getOneOfModel = (Model, id) => {
+const getOneOfModel = (Model, id, jsonify = true) => {
     return new Promise((resolve, reject) => {
         Model
             .findById(id)
             .then(entity => {
                 if (entity) {
-                    resolve(entity);
+                    resolve(jsonify ? entity.toJSON() : entity);
                 } else reject(new NotFoundModelWithId("Entity with id not found"));
             })
             .catch(error => reject(error));

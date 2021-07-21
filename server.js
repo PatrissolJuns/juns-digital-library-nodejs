@@ -26,9 +26,11 @@ app.use(cors());
 // Setting entry point to get static file
 // And disable authentication
 app.use(STORAGE.AUDIOS.HLS, stream.getAudioHlsContent);
-// app.use(STORAGE.VIDEOS.HLS, stream.getAudioHlsContent);
+
 app.use(STORAGE.AUDIOS.COVER, stream.getAudioCoverContent);
-// app.use(STORAGE.VIDEOS.COVER, stream.getVideoCoverContent);
+
+app.use(STORAGE.PLAYLISTS.COVER, stream.getPlaylistCoverContent);
+
 app.use(STORAGE.AUDIOS.RAW, stream.getRawAudioContent);
 
 // Enable jwt for authentication

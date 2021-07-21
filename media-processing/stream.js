@@ -4,8 +4,9 @@ const Audio = require('../models/Audio');
 const {ERRORS} = require('../utils/errors');
 const logger = require('./../config/logger');
 const ffmpeg = require('child_process').exec;
-const {getErrors, getSuccess} = require('../helpers');
+const Playlist = require('../models/Playlist');
 const {mediaConfig, baseSubDirConfig} = require('../config');
+const {getErrors, isValidObjectId, getOneOfModel} = require('../helpers');
 
 /**
  * Create hls files for audio media
@@ -108,7 +109,7 @@ const getAudioHlsContent = (req, res) => {
     const file = `${process.cwd()}/${mediaConfig.audio.storage}/${audioId}/${baseSubDirConfig.hls}/${audioChunkName}`;
 
     // Render the file
-    res.download(file, err => {
+    return res.download(file, err => {
         if (err) {
             logger.error(`The audio hls files of id ${audioId} could not be found: The error: ${err}`);
             return res.status(400).json(getErrors(ERRORS.MEDIA.FILE_NOT_FOUND));
@@ -162,10 +163,10 @@ const getRawAudioContent = async (req, res) => {
         const audio = await Audio.findById(audioId);
         const file = `${process.cwd()}/${mediaConfig.audio.storage}/${audioId}/${audio.source}`;
         // Try to download the file with its uploaded title
-        res.download(file, `${audio.title}`, err => {
+        return res.download(file, `${audio.title}`, err => {
             if (err) {
                 logger.error(`The audio file of id ${audioId} could not be found: The error: ${err}`);
-                return res.status(400).json(getErrors(ERRORS.MEDIA.FILE_NOT_FOUND));
+                // return res.status(400).json(getErrors(ERRORS.MEDIA.FILE_NOT_FOUND));
             }
         });
     } catch (e) {
@@ -286,6 +287,44 @@ const getVideoCoverContent = async (req, res) => {
     }
 };
 
+/**
+ * Return playlist cover
+ * @param req
+ * @param res
+ * @returns {*|void}
+ */
+const getPlaylistCoverContent = async (req, res) => {
+    const playlistId = req.params.playlistId;
+
+    // First check if the id is a valid one
+    if (!isValidObjectId(playlistId)) {
+        return res.status(400).json(getErrors(ERRORS.PLAYLISTS.UNKNOWN_PLAYLIST));
+    }
+
+    try {
+        // Get correspondent playlist
+        let playlist = await getOneOfModel(Playlist, playlistId);
+
+        // Get absolute file path of the cover
+        let file = `${process.cwd()}/${mediaConfig.playlist.storage}/${playlistId}/${baseSubDirConfig.pictures}/${playlistId}.${playlist._cover.ext}`;
+
+        // Check if the file exits
+        if (!fs.existsSync(file)) {
+            // Set default playlist image instead
+            file = `${process.cwd()}/${mediaConfig.playlist.cover.default.path}`;
+        }
+
+        // Set the filename and download
+        return res.download(file, `${playlist.name}.${playlist._cover.ext}`, err => {
+            if (err) {
+                logger.error(`The image file for the playlist of id ${playlistId} could not be found: The error: ${err}`);
+                return res.status(400).json(getErrors(ERRORS.MEDIA.NOT_FOUND));
+            }
+        });
+    } catch (e) {
+        return res.status(400).json(getErrors(ERRORS.PLAYLISTS.NOT_FOUND));
+    }
+};
 
 /**
  * Get Video's details
@@ -317,3 +356,4 @@ exports.getVideoHlsContent = getVideoHlsContent;
 exports.getAudioCoverContent = getAudioCoverContent;
 exports.getVideoCoverContent = getVideoCoverContent;
 exports.createVideoThumbnail = createVideoThumbnail;
+exports.getPlaylistCoverContent = getPlaylistCoverContent;

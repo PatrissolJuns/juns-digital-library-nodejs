@@ -26,6 +26,10 @@ const ERRORS = {
             message: "This field is required",
             field: "title",
         },
+        INVALID: {
+            code: "fields/invalid",
+            message: "The field is invalid",
+        },
         INVALID_EMAIL: {
             code: "fields/invalid-email",
             message: "Email is invalid",
@@ -101,21 +105,25 @@ const ERRORS = {
     },
     PLAYLISTS: {
         UNKNOWN_PLAYLIST: {
-            code: "playlist/unknown-playlist",
+            code: "playlists/unknown-playlist",
             message: "Unknown playlist id",
         },
         INVALID_ITEMS_STRUCTURE: {
-            code: "playlist/invalid-items-structure",
+            code: "playlists/invalid-items-structure",
             message: "The structure of given items were invalid",
         },
         INVALID_ITEMS: {
-            code: "playlist/invalid-items",
+            code: "playlists/invalid-items",
             message: "Given items were invalid",
         },
         EMPTY_ITEMS: {
-            code: "playlist/empty-items",
+            code: "playlists/empty-items",
             message: "Given items were empty",
-        }
+        },
+        NOT_FOUND: {
+            code: "playlists/not-found",
+            message: "Playlist could not be found",
+        },
     },
 };
 

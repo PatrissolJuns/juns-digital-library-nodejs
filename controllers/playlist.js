@@ -2,6 +2,7 @@ const logger = require('../config/logger');
 const {ERRORS} = require('../utils/errors');
 const {mediaConfig} = require('../config');
 const Playlist = require('../models/Playlist');
+const Audio = require('../models/Audio');
 const PlaylistValidator = require('../validations/playlist');
 const {NotFoundModelWithId} = require('../utils/error-handler');
 const {getErrors, isValidObjectId, getOneOfModel} = require('../helpers');
@@ -29,6 +30,71 @@ exports.getAll = (socket, outputEvent, data) => {
 };
 
 /**
+ * Get tje very content of a playlist
+ * @param playlist
+ * @returns {Promise<any>}
+ */
+const getPlaylistContent = (playlist) => {
+    return new Promise((resolve, reject) => {
+        if (playlist.content.length === 0) {
+            resolve([]);
+            return;
+        }
+        // [a1, a2, a5, v3, a5]
+        let audioIds = [], videoIds = [];
+        playlist.content.forEach(item => {
+            if (item.type === mediaConfig.media.type.audio) {
+                audioIds.push(item.id)
+            } else videoIds.push(item.id);
+        });
+        // const audioIds = playlist.content.filter(item => item.type === mediaConfig.media.type.audio).map(item => item.id),
+        //     videoIds = playlist.content.filter(item => item.type === mediaConfig.media.type.video).map(item => item.id);
+
+        Promise
+            .all([
+                // Audio.find({_id : { $in : audios.map(a => a.item.id) } }),
+                Audio.find({_id : { $in : audioIds } }),
+                // Video.find({_id : { $in : videoIds } }),
+            ])
+            .then(values => {
+                const result = [], audiosResult = values[0], videoResult = []; // values[1];
+                /*console.log("audiosResult => ", audiosResult.length, " con => ", playlist.content.length);
+                let a = audiosResult[0], b = playlist.content[0];
+                console.log("ty a => ", typeof a._id.toString(), " ty b => ", typeof b.id);
+                console.log("a => ", a._id.toString(), " b.id => ", b.id);
+                console.log("a === b ", a._id.equals(b.id));*/
+
+
+                // Map content data to gets the real value
+                playlist.content.forEach((item, index) => {
+                    if (item.type === mediaConfig.media.type.audio) {
+                        const _item = audiosResult.find(a => a._id.equals(item.id));
+                        if (_item) {
+                            result[index] = {
+                                ..._item.toJSON(),
+                                mediaType: mediaConfig.media.type.audio,
+                            };
+                        }
+                    } else {
+                        const _item = videoResult.find(a => a._id.equals(item.id));
+                        if (_item) {
+                            result[index] = {
+                                ..._item.toJSON(),
+                                mediaType: mediaConfig.media.type.video,
+                            };
+                        }
+                    }
+                });
+                resolve(result);
+            })
+            .catch(error => {
+                logger.error("Error while getting playlist content of " + JSON.stringify(playlist) + ". The error: " + error);
+                reject(null);
+            });
+    })
+};
+
+/**
  * Get one playlist
  * @param socket
  * @param outputEvent
@@ -47,11 +113,20 @@ exports.getOne = (socket, outputEvent, data) => {
         .then(async playlist => {
             try {
                 const content = await getPlaylistContent(playlist);
+
                 socket.emit(outputEvent, {status: true, data: {...playlist, content}});
             } catch (e) { throw e; }
         })
         .catch(error => {
-            logger.error("Error while getting playlist content of id" + id + ". The error: " + error);
+            if (error instanceof NotFoundModelWithId) {
+                return socket.emit(outputEvent, {
+                    outputEvent,
+                    status: false,
+                    errors: getErrors(ERRORS.PLAYLISTS.NOT_FOUND).errors,
+                });
+            }
+
+            logger.error("Error while getting playlist content of id" + data.id + ". The error: " + error);
             socket.emit(outputEvent, {
                 outputEvent,
                 status: false,
@@ -79,13 +154,16 @@ exports.create = (socket, outputEvent, data) => {
 
     const playlist = new Playlist({
         name: data.name,
+        cover: mediaConfig.playlist.cover.default.name,
+        description: data.description || "",
         content: data.content || [],
+        userId: socket.handshake.user._id
     });
 
     playlist
         .save()
-        .then(playlist => {
-            socket.emit(outputEvent, {status: true, data: playlist});
+        .then(_playlist => {
+            socket.emit(outputEvent, {status: true, data: _playlist});
         })
         .catch(error => {
             logger.error("Error while creating playlist with data " + JSON.stringify(data) + ". The error: " + error);
@@ -116,7 +194,13 @@ exports.update = async (socket, outputEvent, data) => {
 
     try {
         const playlist = await getOneOfModel(Playlist, data.id);
-        playlist.name = name;
+        if (data.name) {
+            playlist.name = data.name;
+        }
+
+        if (data.description) {
+            playlist.description = data.description;
+        }
 
         // Update playlist
         playlist
@@ -261,45 +345,4 @@ exports.removeContent = async (socket, outputEvent, data) => {
             errors: getErrors(ERRORS.SERVER.INTERNAL_SERVER_ERROR).errors,
         });
     }
-};
-
-/**
- * Get tje very content of a playlist
- * @param playlist
- * @returns {Promise<any>}
- */
-exports.getPlaylistContent = (playlist) => {
-    return new Promise((resolve, reject) => {
-        // [a1, a2, a5, v3, a5]
-        /*let audios = [], videos = [];
-        playlist.content.filter((item, index) => {
-            if (item.type === process.env.MEDIA_TYPE_AUDIO) {
-                audios.push({item: item, index})
-            } else videos.push({item: item, index})
-        });*/
-        const audioIds = playlist.content.filter(item => item.type === mediaConfig.media.type.audio).map(item => item.id),
-              videoIds = playlist.content.filter(item => item.type === mediaConfig.media.type.video).map(item => item.id);
-
-        Promise
-            .all([
-                // Audio.find({_id : { $in : audios.map(a => a.item.id) } }),
-                Audio.find({_id : { $in : audioIds } }),
-                // Video.find({_id : { $in : videoIds } }),
-            ])
-            .then(values => {
-                const result = [], audiosResult = values[0], videoResult = []; // values[1];
-
-                // Map content data to gets the real value
-                playlist.content.forEach((item, index) => {
-                    if (item.type === process.env.MEDIA_TYPE_AUDIO) {
-                        result[index] = audiosResult.find(a => a._id === item.id);
-                    } else result[index] = videoResult.find(v => v._id === item.id);
-                });
-                resolve(result);
-            })
-            .catch(error => {
-                logger.error("Error while getting playlist content of " + JSON.stringify(playlist) + ". The error: " + error);
-                reject(null);
-            });
-    })
 };

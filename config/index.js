@@ -72,6 +72,7 @@ const mediaConfig = {
         }
     },
     playlist: {
+        storage: process.env.PLAYLISTS_STORAGE_DIR,
         cover: {
             url: process.env.COVER_PICTURE_PLAYLIST_URL,
             name: process.env.COVER_PICTURE_PLAYLIST_NAME,

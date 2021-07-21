@@ -53,13 +53,15 @@ exports.validateIdAndItems = async (data) => {
 };
 
 exports.validateUpdate = (data) => {
-    const { id, name, cover } = data;
+    const { id, name, description, cover } = data;
     const result = {isCorrect: false, errors: []};
 
     if (!isValidObjectId(id))
         result.errors.push({...ERRORS.PLAYLISTS.UNKNOWN_PLAYLIST, field: "id"});
     if (name && (!(typeof name === "string" && name.length > 0)))
-        result.errors.push({...ERRORS.FIELDS.REQUIRED, field: "name"});
+        result.errors.push({...ERRORS.FIELDS.INVALID, field: "name"});
+    if (description && (!(typeof description === "string" && description.length > 0)))
+        result.errors.push({...ERRORS.FIELDS.INVALID, field: "description"});
 
     return result.errors.length === 0
         ? {isCorrect: true, errors: []}
