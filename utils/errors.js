@@ -124,6 +124,10 @@ const ERRORS = {
             code: "playlists/not-found",
             message: "Playlist could not be found",
         },
+        CONTENT_NOT_IDENTICAL: {
+            code: "playlists/content-not-identical",
+            message: "The incoming content and the current content are not identical",
+        },
     },
 };
 

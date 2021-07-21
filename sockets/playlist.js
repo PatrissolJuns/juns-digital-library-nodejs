@@ -8,4 +8,5 @@ exports.routes = (socket) => {
     socket.on(PLAYLISTS.GET_ONE.INPUT, (data) => PlaylistController.getOne(socket, PLAYLISTS.GET_ONE.OUTPUT, data));
     socket.on(PLAYLISTS.ITEMS.ADD.INPUT, (data) => PlaylistController.addItems(socket, PLAYLISTS.ITEMS.ADD.OUTPUT, data));
     socket.on(PLAYLISTS.ITEMS.REMOVE.INPUT, (data) => PlaylistController.removeContent(socket, PLAYLISTS.ITEMS.REMOVE.OUTPUT, data));
+    socket.on(PLAYLISTS.ITEMS.REORDER.INPUT, (data) => PlaylistController.reorderContent(socket, PLAYLISTS.ITEMS.REORDER.OUTPUT, data));
 };

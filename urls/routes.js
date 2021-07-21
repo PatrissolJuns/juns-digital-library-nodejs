@@ -37,6 +37,10 @@ const PLAYLISTS = {
             INPUT: 'playlists:items:add:input',
             OUTPUT: 'playlists:items:add:output',
         },
+        REORDER: {
+            INPUT: 'playlists:items:reorder:input',
+            OUTPUT: 'playlists:items:reorder:output',
+        },
         REMOVE: {
             INPUT: 'playlists:items:remove:input',
             OUTPUT: 'playlists:items:remove:output',

@@ -1,6 +1,8 @@
 const validator = require('validator');
-const {ERRORS} = require('../utils/errors');
+const Audio = require('../models/Audio');
 const {mediaConfig} = require('../config');
+const logger = require('../config/logger');
+const {ERRORS} = require('../utils/errors');
 const {getErrors, isValidObjectId} = require('../helpers');
 
 exports.validateCreate = (data) => {
@@ -36,13 +38,14 @@ exports.validateIdAndItems = async (data) => {
     )) {
         result.errors.push({...ERRORS.PLAYLISTS.INVALID_ITEMS_STRUCTURE});
     } else {
-        const audioIds = items.find(i => i.type === mediaConfig.media.type.audio);
+        const audioIds = items.filter(i => i.type === mediaConfig.media.type.audio).map(i => i.id);
         try {
             const result = await Audio.find({_id: {$in: audioIds}});
             if (result.length !== audioIds.length) {
                 result.errors.push({...ERRORS.PLAYLISTS.INVALID_ITEMS});
             }
         } catch (e) {
+            logger.error("Error while validating id and items for a playlist with given data " + JSON.stringify(data) + ". The error: " + e);
             result.errors.push({...ERRORS.SERVER.INTERNAL_SERVER_ERROR});
         }
     }

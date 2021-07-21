@@ -288,6 +288,71 @@ exports.addItems = async (socket, outputEvent, data) => {
 };
 
 /**
+ * Add items to a playlist
+ * @param socket
+ * @param outputEvent
+ * @param data Object(id: String, items: Array({id, type}))
+ * @returns {Promise<void>}
+ */
+exports.reorderContent = async (socket, outputEvent, data) => {
+    // validate
+    const validation = await PlaylistValidator.validateIdAndItems(data);
+
+    if (!validation.isCorrect) {
+        return socket.emit(outputEvent, {
+            outputEvent,
+            status: false,
+            errors: validation.errors,
+        });
+    }
+
+    try {
+        const playlist = await getOneOfModel(Playlist, data.id, false);
+        // Check if items are correct
+        if (!areContentIdentical(playlist.content.map(c => ({type: c.type, id: c.id.toString()})), data.items)) {
+            return socket.emit(outputEvent, {
+                outputEvent,
+                status: false,
+                errors: getErrors(ERRORS.PLAYLISTS.CONTENT_NOT_IDENTICAL).errors,
+            });
+        }
+
+        // Update content
+        playlist.content = [...data.items];
+
+        // Update playlist
+        playlist
+            .save()
+            .then(playlist => {
+                socket.emit(outputEvent, {status: true, data: playlist});
+            })
+            .catch(error => {
+                logger.error("Error while reordering items into a playlist " + JSON.stringify(playlist) + ". The error: " + error);
+                socket.emit(outputEvent, {
+                    outputEvent,
+                    status: false,
+                    errors: getErrors(ERRORS.SERVER.INTERNAL_SERVER_ERROR).errors,
+                });
+            });
+    } catch (error) {
+        if (error instanceof NotFoundModelWithId) {
+            return socket.emit(outputEvent, {
+                outputEvent,
+                status: false,
+                errors: getErrors(ERRORS.PLAYLISTS.UNKNOWN_PLAYLIST).errors,
+            });
+        }
+
+        logger.error("Error while reordering items into a playlist. The error: " + error);
+        socket.emit(outputEvent, {
+            outputEvent,
+            status: false,
+            errors: getErrors(ERRORS.SERVER.INTERNAL_SERVER_ERROR).errors,
+        });
+    }
+};
+
+/**
  * Remove some elements from a playlist
  * @param socket
  * @param outputEvent
@@ -345,4 +410,16 @@ exports.removeContent = async (socket, outputEvent, data) => {
             errors: getErrors(ERRORS.SERVER.INTERNAL_SERVER_ERROR).errors,
         });
     }
+};
+
+/**
+ * Check if two playlist content are identical
+ *   i.e they have they same values but it may be in different order
+ * @param source
+ * @param incoming
+ * @returns {*}
+ */
+const areContentIdentical = (source, incoming) => {
+    return source.every(s => incoming.findIndex(i => i.id === s.id && i.type === s.type) !== -1)
+        && incoming.every(i => source.findIndex(s => s.id === i.id && s.type === s.type) !== -1);
 };
