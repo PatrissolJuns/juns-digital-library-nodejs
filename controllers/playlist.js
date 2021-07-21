@@ -371,14 +371,14 @@ exports.removeContent = async (socket, outputEvent, data) => {
     }
 
     try {
-        const playlist = await getOneOfModel(Playlist, data.id);
+        const playlist = await getOneOfModel(Playlist, data.id, false);
 
         // Remove all ?
         if (data.all) {
             playlist.content = [];
         } else {
             const itemsId = data.items.map(i => i.id);
-            playlist.content = playlist.content.filter(item => !itemsId.includes(item.id));
+            playlist.content = playlist.content.filter(item => !itemsId.includes(item.id.toString()));
         }
 
         // Update playlist
@@ -404,6 +404,7 @@ exports.removeContent = async (socket, outputEvent, data) => {
             });
         }
 
+        logger.error(`Error while removing items into a playlist with given data ${data}. The error: ${error}`);
         socket.emit(outputEvent, {
             outputEvent,
             status: false,
